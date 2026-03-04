@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Series Controller</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold:       #c8aa6e;
+    --gold-light: #f0e6c0;
+    --gold-dark:  #785a28;
+    --blue:       #0bc4e3;
+    --red:        #e84057;
+    --bg:         #010a13;
+    --card:       #0d1117;
+    --card2:      #141a24;
+    --border:     #1e2535;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Barlow Condensed', sans-serif;
+    color: #bbb;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 40px;
+  }
+
+  header {
+    width: 100%;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .logo::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 8px var(--gold);
+  }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  .status-pill {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+
+  .status-pill.ok    { color: #4ade80; border-color: #4ade80; background: rgba(74,222,128,0.08); }
+  .status-pill.idle  { color: #666;    border-color: #333; }
+
+  .server-label { display: flex; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 1px; color: #444; }
+
+  .server-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #333;
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+
+  .server-dot.connected { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+  .server-dot.error     { background: #e84057; box-shadow: 0 0 6px #e84057; }
+
+  #setup-section, #live-section {
+    width: 100%;
+    max-width: 560px;
+    padding: 32px 24px 0;
+  }
+
+  #live-section { display: none; }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--gold-dark), transparent);
+  }
+
+  /* Team block: abbr + optional seed stacked */
+  .team-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .team-col { display: flex; flex-direction: column; gap: 8px; }
+
+  .field label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .field.blue label { color: var(--blue); }
+  .field.red  label { color: var(--red);  }
+  .field.gold label { color: var(--gold); }
+
+  .field input {
+    width: 100%;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: #fff;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  /* Abbr input — big */
+  .field.abbr input {
+    padding: 11px 14px;
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .field.blue.abbr input:focus { border-color: var(--blue); }
+  .field.red.abbr  input:focus { border-color: var(--red);  }
+
+  /* Seed input — small */
+  .field.seed input {
+    padding: 7px 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  .field.seed input:focus { border-color: var(--gold); }
+
+  .field.seed input::placeholder { color: #333; font-style: italic; }
+
+  .format-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+
+  .format-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .format-btn {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+    font-family: 'Cinzel', serif;
+  }
+
+  .format-btn .fmt-title { font-size: 20px; font-weight: 900; letter-spacing: 2px; color: #777; transition: color 0.18s; }
+  .format-btn .fmt-sub   { font-size: 10px; letter-spacing: 2px; color: #444; margin-top: 4px; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+
+  .format-btn.selected { background: rgba(200,170,110,0.08); border-color: var(--gold); box-shadow: 0 0 20px rgba(200,170,110,0.1); }
+  .format-btn.selected .fmt-title { color: var(--gold-light); }
+  .format-btn.selected .fmt-sub   { color: var(--gold); }
+
+  .btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    border: none;
+    border-radius: 3px;
+    padding: 14px;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--bg);
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .btn-primary:hover  { opacity: 0.88; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* Preview */
+  .scoreboard-preview {
+    background: linear-gradient(135deg, #080f1a, #0d1520);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+  }
+
+  .sb-team { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+  .sb-name-row {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+
+  .sb-seed {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.5;
+  }
+
+  .sb-seed:empty { display: none; }
+
+  .sb-abbr {
+    font-family: 'Cinzel', serif;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-shadow: 0 0 15px currentColor;
+  }
+
+  #prev-left  .sb-abbr { color: var(--blue); }
+  #prev-left  .sb-seed { color: var(--blue); }
+  #prev-right .sb-abbr { color: var(--red);  }
+  #prev-right .sb-seed { color: var(--red);  }
+
+  .sb-dots { display: flex; gap: 7px; }
+
+  .sb-dot {
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  #prev-left  .sb-dot.filled { background: var(--blue); border-color: var(--blue); box-shadow: 0 0 8px var(--blue); }
+  #prev-right .sb-dot.filled { background: var(--red);  border-color: var(--red);  box-shadow: 0 0 8px var(--red);  }
+
+  .sb-center { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .sb-vs { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); opacity: 0.5; }
+  .sb-format-tag { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 2px; color: rgba(200,170,110,0.4); text-transform: uppercase; }
+
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .ctrl-btn {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 18px 12px;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    font-family: 'Barlow Condensed', sans-serif;
+  }
+
+  .ctrl-btn:hover  { transform: translateY(-2px); }
+  .ctrl-btn:active { transform: translateY(0); opacity: 0.8; }
+
+  .ctrl-btn .icon  { font-size: 22px; line-height: 1; }
+  .ctrl-btn .label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #555; }
+  .ctrl-btn .name  { font-size: 15px; font-weight: 700; letter-spacing: 1px; }
+
+  .btn-blue { border-color: rgba(11,196,227,0.2); }
+  .btn-blue:hover { background: rgba(11,196,227,0.07); border-color: var(--blue); box-shadow: 0 4px 24px rgba(11,196,227,0.12); }
+  .btn-blue .name { color: var(--blue); }
+
+  .btn-red  { border-color: rgba(232,64,87,0.2); }
+  .btn-red:hover  { background: rgba(232,64,87,0.07);  border-color: var(--red);  box-shadow: 0 4px 24px rgba(232,64,87,0.12);  }
+  .btn-red .name  { color: var(--red); }
+
+  .btn-swap { padding: 14px 20px; border-color: rgba(200,170,110,0.2); font-size: 22px; color: var(--gold); flex-direction: column; gap: 6px; }
+  .btn-swap:hover { background: rgba(200,170,110,0.07); border-color: var(--gold); }
+  .btn-swap .swap-label { font-size: 9px; letter-spacing: 2px; color: var(--gold-dark); text-transform: uppercase; }
+
+  .action-row { display: flex; gap: 10px; margin-bottom: 24px; }
+
+  .btn-sec {
+    flex: 1;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    color: #555;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+
+  .btn-sec:hover        { border-color: #aaa; color: #aaa; }
+  .btn-sec.danger:hover { border-color: var(--red); color: var(--red); }
+
+  .log-box {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    height: 130px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.8;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    margin-bottom: 20px;
+  }
+
+  .log-row { display:flex; gap:10px; align-items:baseline; opacity:0; animation: fadeIn 0.3s forwards; }
+  .log-t { color:#333; font-size:10px; flex-shrink:0; }
+  .log-m { color:#777; }
+  .log-m.b { color: var(--blue); }
+  .log-m.r { color: var(--red); }
+  .log-m.g { color: var(--gold); }
+  .log-m.w { color: #4ade80; font-weight:700; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:none} }
+
+  .shortcuts {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid #111;
+    border-radius: 4px;
+    padding: 14px 16px;
+  }
+
+  .sc-title { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:#333; margin-bottom:10px; }
+  .sc-grid  { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .sc-item  { display:flex; align-items:center; gap:6px; font-size:11px; color:#555; }
+
+  kbd {
+    background:#0d1117; border:1px solid #2a2a3a; border-radius:3px;
+    padding:2px 6px; font-family:monospace; font-size:10px; color:var(--gold);
+    white-space: nowrap;
+  }
+
+  #server-warning {
+    display: none;
+    background: rgba(232,64,87,0.1);
+    border: 1px solid rgba(232,64,87,0.3);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #e84057;
+    line-height: 1.6;
+  }
+
+  #server-warning.show { display: block; }
+  #server-warning code { background: rgba(0,0,0,0.4); padding: 1px 6px; border-radius: 3px; font-size: 12px; color: #f0e6c0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SERIES CONTROLLER</div>
+  <div class="header-right">
+    <div class="server-label">
+      <div class="server-dot" id="server-dot"></div>
+      <span id="server-label-text">server</span>
+    </div>
+    <div class="status-pill idle" id="status-pill">WAITING FOR SETUP</div>
+  </div>
+</header>
+
+<div id="setup-section">
+  <div id="server-warning">
+    ⚠️ Relay server not running — overlay won't update.<br>
+    Open a terminal in this folder and run: <code>python server.py</code>
+  </div>
+
+  <div class="section-title">Team Setup</div>
+
+  <div class="team-row">
+    <!-- LEFT / BLUE -->
+    <div class="team-col">
+      <div class="field blue abbr">
+        <label>Blue Side (Left)</label>
+        <input id="t1" type="text" placeholder="UoE">
+      </div>
+      <div class="field seed">
+        <label>Seed (optional)</label>
+        <input id="s1" type="text" placeholder="#1">
+      </div>
+    </div>
+    <!-- RIGHT / RED -->
+    <div class="team-col">
+      <div class="field red abbr">
+        <label>Red Side (Right)</label>
+        <input id="t2" type="text" placeholder="UoG">
+      </div>
+      <div class="field seed">
+        <label>Seed (optional)</label>
+        <input id="s2" type="text" placeholder="#2">
+      </div>
+    </div>
+  </div>
+
+  <div class="format-label">Series Format</div>
+  <div class="format-row">
+    <div class="format-btn" data-wins="1" onclick="selectFormat(1)">
+      <div class="fmt-title">BO1</div>
+      <div class="fmt-sub">Single game</div>
+    </div>
+    <div class="format-btn selected" data-wins="2" onclick="selectFormat(2)">
+      <div class="fmt-title">BO3</div>
+      <div class="fmt-sub">First to 2</div>
+    </div>
+    <div class="format-btn" data-wins="3" onclick="selectFormat(3)">
+      <div class="fmt-title">BO5</div>
+      <div class="fmt-sub">First to 3</div>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="startSeries()">▶ BEGIN SERIES</button>
+</div>
+
+<div id="live-section">
+
+  <div class="section-title" style="margin-bottom:14px">Live Preview</div>
+
+  <div class="scoreboard-preview">
+    <div class="sb-team" id="prev-left">
+      <div class="sb-name-row">
+        <div class="sb-seed" id="pl-seed"></div>
+        <div class="sb-abbr" id="pl-abbr">—</div>
+      </div>
+      <div class="sb-dots" id="pl-dots"></div>
+    </div>
+    <div class="sb-center">
+      <div class="sb-vs">VS</div>
+      <div class="sb-format-tag" id="sb-format-tag">BO3</div>
+    </div>
+    <div class="sb-team" id="prev-right">
+      <div class="sb-name-row">
+        <div class="sb-seed" id="pr-seed"></div>
+        <div class="sb-abbr" id="pr-abbr">—</div>
+      </div>
+      <div class="sb-dots" id="pr-dots"></div>
+    </div>
+  </div>
+
+  <div class="section-title">Controls</div>
+
+  <div class="controls-grid">
+    <button class="ctrl-btn btn-blue" onclick="givePoint('left')">
+      <span class="icon">🏆</span>
+      <span class="label">Game Win</span>
+      <span class="name" id="btn-left-name">TEAM</span>
+    </button>
+
+    <button class="ctrl-btn btn-swap" onclick="swapSides()">
+      <span>⇄</span>
+      <span class="swap-label">Swap Sides</span>
+    </button>
+
+    <button class="ctrl-btn btn-red" onclick="givePoint('right')">
+      <span class="icon">🏆</span>
+      <span class="label">Game Win</span>
+      <span class="name" id="btn-right-name">TEAM</span>
+    </button>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-sec" onclick="undoLast()">↩ Undo</button>
+    <button class="btn-sec" onclick="resetScores()">↺ Reset Scores</button>
+    <button class="btn-sec danger" onclick="newTeams()">✕ New Series</button>
+  </div>
+
+  <div class="section-title">Event Log</div>
+  <div class="log-box" id="log-box"></div>
+
+  <div class="shortcuts">
+    <div class="sc-title">Keyboard Shortcuts</div>
+    <div class="sc-grid">
+      <div class="sc-item"><kbd>Ctrl+Shift+←</kbd> Left wins</div>
+      <div class="sc-item"><kbd>Ctrl+Shift+S</kbd> Swap sides</div>
+      <div class="sc-item"><kbd>Ctrl+Shift+→</kbd> Right wins</div>
+      <div class="sc-item"><kbd>Ctrl+Shift+Z</kbd> Undo</div>
+      <div class="sc-item"><kbd>Ctrl+Shift+R</kbd> Reset scores</div>
+      <div class="sc-item"><kbd>Ctrl+Shift+T</kbd> New series</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const SERVER = 'http://localhost:8765';
+
+  let selectedWins = 2;
+  let state = null;
+  let history = [];
+
+  async function checkServer() {
+    try {
+      await fetch(`${SERVER}/state`);
+      setServerStatus(true);
+    } catch(e) { setServerStatus(false); }
+  }
+
+  function setServerStatus(ok) {
+    document.getElementById('server-dot').className = 'server-dot ' + (ok ? 'connected' : 'error');
+    document.getElementById('server-label-text').textContent = ok ? 'server ✓' : 'server offline';
+    const w = document.getElementById('server-warning');
+    if (w) w.classList.toggle('show', !ok);
+  }
+
+  setInterval(checkServer, 3000);
+  checkServer();
+
+  function selectFormat(wins) {
+    selectedWins = wins;
+    document.querySelectorAll('.format-btn').forEach(b => {
+      b.classList.toggle('selected', parseInt(b.dataset.wins) === wins);
+    });
+  }
+
+  async function push() {
+    state.ts = Date.now();
+    try {
+      await fetch(`${SERVER}/state`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      });
+      setServerStatus(true);
+    } catch(e) {
+      setServerStatus(false);
+      log('⚠️ Could not reach relay server!', 'r');
+    }
+    render();
+  }
+
+  function buildPreviewDots(id, score, wn) {
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    for (let i = 0; i < wn; i++) {
+      const d = document.createElement('div');
+      d.className = 'sb-dot' + (i < score ? ' filled' : '');
+      el.appendChild(d);
+    }
+  }
+
+  function render() {
+    const left  = state[state.leftTeam];
+    const right = state[state.leftTeam === 'team1' ? 'team2' : 'team1'];
+    const wn    = state.winsNeeded;
+    const fmt   = wn === 1 ? 'BO1' : wn === 2 ? 'BO3' : 'BO5';
+
+    document.getElementById('pl-abbr').textContent = left.abbr;
+    document.getElementById('pr-abbr').textContent = right.abbr;
+    document.getElementById('pl-seed').textContent = left.seed  || '';
+    document.getElementById('pr-seed').textContent = right.seed || '';
+    document.getElementById('btn-left-name').textContent  = left.abbr;
+    document.getElementById('btn-right-name').textContent = right.abbr;
+    document.getElementById('sb-format-tag').textContent  = fmt;
+
+    buildPreviewDots('pl-dots', left.score,  wn);
+    buildPreviewDots('pr-dots', right.score, wn);
+
+    const pill = document.getElementById('status-pill');
+    pill.textContent = `${left.abbr} ${left.score} – ${right.score} ${right.abbr} · ${fmt}`;
+    pill.className   = 'status-pill ok';
+  }
+
+  function startSeries() {
+    const a1 = document.getElementById('t1').value.trim().toUpperCase() || 'T1';
+    const a2 = document.getElementById('t2').value.trim().toUpperCase() || 'T2';
+    const s1 = document.getElementById('s1').value.trim();
+    const s2 = document.getElementById('s2').value.trim();
+
+    state = {
+      team1: { abbr: a1, seed: s1, score: 0 },
+      team2: { abbr: a2, seed: s2, score: 0 },
+      leftTeam: 'team1',
+      winsNeeded: selectedWins,
+      showWinner: null,
+      ts: 0
+    };
+    history = [];
+
+    document.getElementById('setup-section').style.display = 'none';
+    document.getElementById('live-section').style.display  = 'block';
+
+    push();
+    const fmt = selectedWins === 1 ? 'BO1' : selectedWins === 2 ? 'BO3' : 'BO5';
+    const seedStr1 = s1 ? ` <span style="opacity:.5">${s1}</span>` : '';
+    const seedStr2 = s2 ? ` <span style="opacity:.5">${s2}</span>` : '';
+    log(`Series started [${fmt}]: <span class="b">${a1}${seedStr1}</span> vs <span class="r">${a2}${seedStr2}</span>`, 'g');
+  }
+
+  function givePoint(side) {
+    const key  = side === 'left' ? state.leftTeam : (state.leftTeam === 'team1' ? 'team2' : 'team1');
+    const team = state[key];
+    if (team.score >= state.winsNeeded) { log('Series already complete.'); return; }
+
+    history.push(JSON.parse(JSON.stringify(state)));
+    team.score++;
+    state.showWinner = null;
+
+    const opp = state[key === 'team1' ? 'team2' : 'team1'];
+    const col = side === 'left' ? 'b' : 'r';
+
+    if (team.score === state.winsNeeded) {
+      state.showWinner = side;
+      const verb = state.winsNeeded === 1 ? 'wins the match!' : 'wins the series!';
+      log(`🏆 <span class="${col}">${team.abbr}</span> ${verb} ${team.score}–${opp.score}`, 'w');
+    } else {
+      log(`<span class="${col}">${team.abbr}</span> wins game — ${team.abbr} ${team.score}–${opp.score} ${opp.abbr}`);
+    }
+    push();
+  }
+
+  function swapSides() {
+    history.push(JSON.parse(JSON.stringify(state)));
+    state.leftTeam   = state.leftTeam === 'team1' ? 'team2' : 'team1';
+    state.showWinner = null;
+    const l = state[state.leftTeam].abbr;
+    const r = state[state.leftTeam === 'team1' ? 'team2' : 'team1'].abbr;
+    log(`⇄ Sides swapped — <span class="b">${l}</span> left / <span class="r">${r}</span> right`, 'g');
+    push();
+  }
+
+  function undoLast() {
+    if (!history.length) return;
+    state = history.pop();
+    push();
+    log(`↩ Last action undone`);
+  }
+
+  function resetScores() {
+    if (!confirm('Reset scores to 0–0?')) return;
+    history.push(JSON.parse(JSON.stringify(state)));
+    state.team1.score = 0;
+    state.team2.score = 0;
+    state.showWinner  = null;
+    push();
+    log(`↺ Scores reset`, 'g');
+  }
+
+  function newTeams() {
+    if (!confirm('Start a completely new series?')) return;
+    document.getElementById('live-section').style.display  = 'none';
+    document.getElementById('setup-section').style.display = 'block';
+    document.getElementById('status-pill').textContent = 'WAITING FOR SETUP';
+    document.getElementById('status-pill').className   = 'status-pill idle';
+  }
+
+  function log(msg, cls = '') {
+    const box = document.getElementById('log-box');
+    const t   = new Date();
+    const ts  = `${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`;
+    const row = document.createElement('div');
+    row.className = 'log-row';
+    row.innerHTML = `<span class="log-t">${ts}</span><span class="log-m ${cls}">${msg}</span>`;
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (!e.ctrlKey || !e.shiftKey) return;
+    if (document.getElementById('live-section').style.display === 'none') return;
+    switch(e.key) {
+      case 'ArrowLeft':  e.preventDefault(); givePoint('left');  break;
+      case 'ArrowRight': e.preventDefault(); givePoint('right'); break;
+      case 'S': e.preventDefault(); swapSides();   break;
+      case 'Z': e.preventDefault(); undoLast();    break;
+      case 'R': e.preventDefault(); resetScores(); break;
+      case 'T': e.preventDefault(); newTeams();    break;
+    }
+  });
+
+  ['t1','t2'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input',   () => el.value = el.value.toUpperCase());
+    el.addEventListener('keydown', e  => { if (e.key === 'Enter') startSeries(); });
+  });
+</script>
+</body>
+</html>
