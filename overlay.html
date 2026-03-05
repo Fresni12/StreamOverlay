@@ -15,7 +15,7 @@
     pointer-events: none;
   }
 
-  /* ── Outer badge: horizontal pill hanging from top ── */
+  /* ── Badges ── */
   .badge {
     position: absolute;
     top: 0;
@@ -23,12 +23,17 @@
     flex-direction: row;
     align-items: stretch;
     height: var(--badge-h);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .badge.hidden {
+    opacity: 0;
+    transform: translateY(-110%);
+    pointer-events: none;
   }
 
-  #badge-left  { right: calc(1920px - var(--badge-left)); } /* dots on LEFT — anchored by right edge so it expands leftward */
-  #badge-right { left: calc(1920px - var(--badge-right)); } /* dots on RIGHT — anchored by left edge so it expands rightward */
+  #badge-left  { right: calc(1920px - var(--badge-left)); }
+  #badge-right { left: calc(1920px - var(--badge-right)); }
 
-  /* ── Main body: team name + seed ── */
   .badge-main {
     display: flex;
     flex-direction: column;
@@ -44,7 +49,6 @@
     border-bottom-color: rgba(200,170,110,0.18);
   }
 
-  /* Gold shimmer line at very top */
   .badge-main::before {
     content: '';
     position: absolute;
@@ -53,7 +57,6 @@
     background: linear-gradient(90deg, transparent, rgba(200,170,110,0.8), transparent);
   }
 
-  /* Left badge: right border removed (dots panel butts up against it) */
   #badge-left  .badge-main { border-right: none; border-radius: 0 0 0 var(--radius); }
   #badge-right .badge-main { border-left:  none; border-radius: 0 0 var(--radius) 0; }
 
@@ -81,10 +84,8 @@
 
   #badge-left  .team-seed { color: #0bc4e3; }
   #badge-right .team-seed { color: #e84057; }
-
   .team-seed:empty { display: none; }
 
-  /* ── Dot column: narrow side panel ── */
   .badge-dots {
     display: flex;
     flex-direction: column;
@@ -100,7 +101,6 @@
     min-width: var(--dot-col-w);
   }
 
-  /* Divider line between main body and dot column */
   #badge-left  .badge-dots { border-right: none; border-radius: 0 0 var(--radius) 0; border-left: 1px solid rgba(200,170,110,0.35); }
   #badge-right .badge-dots { border-left:  none; border-radius: 0 0 0 var(--radius); border-right: 1px solid rgba(200,170,110,0.35); }
 
@@ -145,63 +145,732 @@
 
   .win-team {
     font-family: 'Cinzel', serif;
-    font-size: 96px;
-    font-weight: 900;
-    letter-spacing: 14px;
-    line-height: 1;
+    font-size: 96px; font-weight: 900; letter-spacing: 14px; line-height: 1;
     text-shadow: 0 0 30px currentColor, 0 0 60px currentColor, 0 6px 12px rgba(0,0,0,0.9);
     animation: pulsate 1.2s ease-in-out infinite;
     position: relative;
   }
 
-  @keyframes pulsate {
-    0%,100% { opacity:1; }
-    50%     { opacity:0.85; }
-  }
+  @keyframes pulsate { 0%,100% { opacity:1; } 50% { opacity:0.85; } }
 
   .win-sub {
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: 8px;
-    color: #c8aa6e;
+    font-size: 17px; font-weight: 700; letter-spacing: 8px; color: #c8aa6e;
     text-shadow: 0 0 20px rgba(200,170,110,0.8), 0 2px 6px rgba(0,0,0,0.9);
-    margin-top: 10px;
-    text-transform: uppercase;
-    position: relative;
+    margin-top: 10px; text-transform: uppercase; position: relative;
   }
 
-  .win-deco {
-    display: flex; align-items: center; justify-content: center;
-    gap: 14px; margin-top: 8px; position: relative;
-  }
-
+  .win-deco { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 8px; position: relative; }
   .win-deco-line { width: 70px; height: 1px; }
   #win-deco-l { background: linear-gradient(90deg,  transparent, rgba(200,170,110,0.6)); }
   #win-deco-r { background: linear-gradient(270deg, transparent, rgba(200,170,110,0.6)); }
-
-  .win-deco-diamond {
-    width: 5px; height: 5px;
-    background: #c8aa6e;
-    transform: rotate(45deg);
-    box-shadow: 0 0 6px rgba(200,170,110,0.8);
-  }
-
+  .win-deco-diamond { width: 5px; height: 5px; background: #c8aa6e; transform: rotate(45deg); box-shadow: 0 0 6px rgba(200,170,110,0.8); }
   .win-score {
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 6px;
-    color: rgba(255,255,255,0.45);
-    text-shadow: 0 2px 4px rgba(0,0,0,0.9);
-    margin-top: 4px;
+    font-size: 14px; font-weight: 600; letter-spacing: 6px;
+    color: rgba(255,255,255,0.45); text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+    margin-top: 4px; position: relative;
+  }
+
+  /* ═══════════════════════════════════════════
+     MATCHUP PANEL — bottom left, slides up
+     ═══════════════════════════════════════════ */
+
+  #matchup-panel {
+    position: absolute;
+    left: 0; bottom: 0;
+    width: var(--mp-width);
+    background: rgba(2, 8, 18, 1);
+    border: 1px solid rgba(200,170,110,0.25);
+    border-top: 1px solid rgba(200,170,110,0.5);
+    border-left: none; border-bottom: none;
+    border-radius: 0 4px 0 0;
+    overflow: hidden;
+    /* Hidden at rest — no transition, animation drives everything */
+    opacity: 0;
+    transform: translateY(110%);
+  }
+  #matchup-panel::before {
+    content: '';
+    position: absolute; top: 0; left: 8%; right: 8%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(200,170,110,0.7), transparent);
+    pointer-events: none; z-index: 1;
+  }
+
+  /* Title bar */
+  #mp-title {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    border-bottom: 1px solid rgba(200,170,110,0.12);
+    background: rgba(0,0,0,0.3);
+  }
+  .mp-title-icon { display: flex; align-items: center; color: rgba(200,170,110,0.55); }
+  .mp-title-icon svg { width: 11px; height: 11px; }
+  #mp-title-text {
+    font-family: 'Cinzel', serif;
+    font-size: 9px; font-weight: 700; letter-spacing: 4px;
+    color: rgba(200,170,110,0.65); line-height: 1;
+  }
+
+  /* VS and Body section wrappers — hidden at rest via max-height */
+  #mp-vs-wrap   { max-height: 0; overflow: hidden; }
+  #mp-body-wrap { max-height: 0; overflow: hidden; }
+
+  #mp-vs-bar {
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid rgba(200,170,110,0.15);
+  }
+  #mp-body { display: grid; grid-template-columns: 1fr 1px 1fr; }
+
+  /* VS bar inner layout */
+  .mp-vs-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px; gap: 12px;
+  }
+  .mp-vs-side { display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden; }
+  #mp-vs-red  { flex-direction: row-reverse; }
+  .mp-vs-portrait {
+    border-radius: 4px; object-fit: cover; object-position: center top; flex-shrink: 0;
+    width: calc(var(--mp-portrait) * 2.1); height: calc(var(--mp-portrait) * 2.1);
+  }
+  #mp-vs-blue-portrait { border: 2px solid rgba(11,196,227,0.6); box-shadow: 0 0 20px rgba(11,196,227,0.4); }
+  #mp-vs-red-portrait  { border: 2px solid rgba(232,64,87,0.6);  box-shadow: 0 0 20px rgba(232,64,87,0.4);  }
+  .mp-vs-names { display: flex; flex-direction: column; gap: 4px; min-width: 0; overflow: hidden; }
+  .mp-vs-name {
+    font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 1px;
+    font-size: calc(var(--mp-font-lg) * 1.5); line-height: 1.1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mp-vs-champ {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--mp-font-sm); color: rgba(255,255,255,0.3); line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #mp-vs-blue .mp-vs-name { color: #0bc4e3; text-shadow: 0 0 14px rgba(11,196,227,0.5); }
+  #mp-vs-red  .mp-vs-name { color: #e84057; text-shadow: 0 0 14px rgba(232,64,87,0.5); text-align: right; }
+  #mp-vs-red  .mp-vs-champ { text-align: right; }
+  .mp-vs-separator {
+    font-family: 'Cinzel', serif; font-weight: 900; letter-spacing: 5px;
+    color: rgba(200,170,110,0.8); flex-shrink: 0;
+    text-shadow: 0 0 24px rgba(200,170,110,0.5);
+    font-size: calc(var(--mp-font-lg) * 2.4);
+  }
+
+  /* Rows inside body — hidden at rest */
+  .mp-header   { opacity: 0; transform: translateY(8px); }
+  .mp-rune-row { opacity: 0; transform: translateY(8px); }
+  .mp-shards   { opacity: 0; transform: translateY(8px); }
+
+  /* ═══════════════════════════════════════════════════════
+     KEYFRAME ANIMATIONS
+     All driven by one class: #matchup-panel.playing
+     Removing + reflow + re-adding replays everything fresh
+     ═══════════════════════════════════════════════════════ */
+
+  /* 1. Panel slides up from below */
+  @keyframes kPanelIn {
+    from { transform: translateY(110%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* 2. Title letter-spacing wipe */
+  @keyframes kTitleIn {
+    from { opacity: 0; letter-spacing: 10px; }
+    to   { opacity: 1; letter-spacing: 4px;  }
+  }
+
+  /* 3. Section expand via max-height */
+  @keyframes kSectionOpen {
+    from { max-height: 0; }
+    to   { max-height: 300px; }
+  }
+
+  /* 4. Section collapse */
+  @keyframes kSectionClose {
+    from { max-height: 300px; }
+    to   { max-height: 0; }
+  }
+
+  /* 5. Body expand (taller) */
+  @keyframes kBodyOpen {
+    from { max-height: 0; }
+    to   { max-height: 600px; }
+  }
+
+  /* 6. Row fade + slide up */
+  @keyframes kFadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0);   }
+  }
+
+  /* 7. Panel slides back down (exit) */
+  @keyframes kPanelOut {
+    from { transform: translateY(0);    opacity: 1; }
+    to   { transform: translateY(110%); opacity: 0; }
+  }
+
+  /* 8. Simple fade in */
+  @keyframes kFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* 9. Simple fade out */
+  @keyframes kFadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  /* .leaving: slides panel down, keeps current content visible during exit */
+  #matchup-panel.leaving {
+    animation: kPanelOut 0.5s ease forwards;
+  }
+  #matchup-panel.leaving #mp-vs-wrap,
+  #matchup-panel.leaving #mp-body-wrap {
+    max-height: 600px;
+  }
+  #matchup-panel.leaving .mp-header,
+  #matchup-panel.leaving .mp-rune-row,
+  #matchup-panel.leaving .mp-shards {
+    opacity: 1; transform: translateY(0);
+  }
+
+  /* ── .playing: triggers the full sequence ── */
+
+  #matchup-panel.playing {
+    animation: kPanelIn 0.7s ease forwards;
+  }
+  #matchup-panel.playing #mp-title-text {
+    animation: kTitleIn 0.8s 0.1s both;
+  }
+  #matchup-panel.playing #mp-vs-wrap {
+    animation:
+      kSectionOpen  0.65s 0.7s ease forwards,
+      kSectionClose 0.4s  2.5s ease forwards;
+  }
+  #matchup-panel.playing #mp-body-wrap {
+    animation: kBodyOpen 0.7s 2.6s ease forwards;
+  }
+  #matchup-panel.playing .mp-player .mp-header        { animation: kFadeUp 0.45s 2.8s  both; }
+  #matchup-panel.playing .mp-player .mp-keystone-row  { animation: kFadeUp 0.45s 2.95s both; }
+  #matchup-panel.playing .mp-player .mp-secondary-row { animation: kFadeUp 0.45s 3.1s  both; }
+  #matchup-panel.playing .mp-player .mp-shards        { animation: kFadeUp 0.45s 3.25s both; }
+  .mp-divider { background: rgba(200,170,110,0.1); }
+
+  /* Player column */
+  .mp-player { display: flex; flex-direction: column; }
+
+  #mp-blue { border-right: none; }
+  #mp-red  { border-left: none; }
+
+  /* Header */
+  .mp-header {
+    display: flex; align-items: center; gap: 9px;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .mp-portrait {
+    width: var(--mp-portrait); height: var(--mp-portrait);
+    border-radius: 3px; object-fit: cover; object-position: center top;
+    flex-shrink: 0;
+  }
+  #mp-blue .mp-portrait { border: 1px solid rgba(11,196,227,0.3); }
+  #mp-red  .mp-portrait { border: 1px solid rgba(232,64,87,0.3); }
+
+  .mp-names { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+  .mp-summoner {
+    font-family: 'Cinzel', serif;
+    font-size: var(--mp-font-lg); font-weight: 700; letter-spacing: 0.5px;
+    color: #ddd; line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mp-champ {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--mp-font-sm); letter-spacing: 0.3px;
+    color: rgba(255,255,255,0.3); line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* Rune rows */
+  .mp-rune-row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .mp-rune-row img {
+    border-radius: 50%; object-fit: contain; flex-shrink: 0; display: block;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  }
+  .mp-keystone-row  img { width: calc(var(--mp-ks-sz)  * 3); height: calc(var(--mp-ks-sz)  * 3); }
+  .mp-secondary-row img { width: calc(var(--mp-sec-sz) * 3); height: calc(var(--mp-sec-sz) * 3); opacity: 0.85; }
+  .mp-rune-row img.broken { opacity: 0.1; filter: grayscale(1); }
+
+  .mp-rune-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .mp-rune-main {
+    font-family: 'Cinzel', serif;
+    font-size: var(--mp-font-sm); font-weight: 700; letter-spacing: 0.5px;
+    line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mp-rune-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: calc(var(--mp-font-sm) * 0.9); letter-spacing: 0.3px;
+    line-height: 1; opacity: 0.5;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Shards */
+  .mp-shards {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px 10px;
+  }
+  .mp-shards img {
+    width: var(--mp-shard-sz); height: var(--mp-shard-sz);
+    border-radius: 3px; object-fit: contain; opacity: 0.55;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  }
+  .mp-shards img.broken { opacity: 0.1; filter: grayscale(1); }
+
+  /* ═══════════════════════════════════════════
+     STATS PANEL — bottom left, slides up
+     ═══════════════════════════════════════════ */
+
+  #stats-panel {
+    position: absolute;
+    left: 0; bottom: 0;
+    width: var(--mp-width);
+    background: rgba(2, 8, 18, 1);
+    border: 1px solid rgba(200,170,110,0.25);
+    border-top: 1px solid rgba(200,170,110,0.5);
+    border-left: none; border-bottom: none;
+    border-radius: 0 4px 0 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(110%);
+  }
+  #stats-panel::before {
+    content: '';
+    position: absolute; top: 0; left: 8%; right: 8%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(200,170,110,0.7), transparent);
+    pointer-events: none; z-index: 1;
+  }
+
+  /* ── Intro overlay: covers stats content during phases 1 & 2 ── */
+  #sp-content-area { position: relative; }
+
+  #sp-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 5;
+    background: rgba(2, 8, 18, 1);
+    pointer-events: none;
+  }
+
+  /* Phase 1 — "HEAD TO HEAD / RUNES" text */
+  #sp-phase-text {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    opacity: 0;
+  }
+  .sp-phase-title {
+    font-family: 'Cinzel', serif; font-weight: 900;
+    font-size: calc(var(--mp-font-lg) * 2.2); letter-spacing: 5px;
+    color: #f0e6c0; line-height: 1.15; text-align: center;
+    text-shadow: 0 0 30px rgba(200,170,110,0.4);
+  }
+  .sp-phase-role-row {
+    display: flex; align-items: center; gap: 8px; margin-top: 2px;
+  }
+  #sp-phase-role-icon {
+    width: calc(var(--mp-font-lg) * 2.2); height: calc(var(--mp-font-lg) * 2.2);
+    object-fit: contain; opacity: 0.7;
+    filter: brightness(0) invert(1);
+  }
+  .sp-phase-sub {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 600;
+    font-size: calc(var(--mp-font-lg) * 1.3); letter-spacing: 5px;
+    color: rgba(200,170,110,0.45); text-transform: uppercase;
+  }
+  .sp-phase-deco {
+    display: flex; align-items: center; gap: 10px; margin-top: 4px;
+  }
+  .sp-phase-deco-line { height: 1px; width: 50px; background: linear-gradient(90deg, transparent, rgba(200,170,110,0.4)); }
+  .sp-phase-deco-line.r { transform: scaleX(-1); }
+  .sp-phase-deco-diamond { width: 5px; height: 5px; background: rgba(200,170,110,0.5); transform: rotate(45deg); }
+
+  /* Phase 2 — VS champion portraits */
+  #sp-phase-vs {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; gap: 10px;
+    opacity: 0;
+  }
+  .sp-vs-side {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    flex: 1; min-width: 0;
+  }
+  .sp-vs-portrait {
+    border-radius: 4px; object-fit: cover; object-position: center top;
+    width: calc(var(--mp-portrait) * 1.6); height: calc(var(--mp-portrait) * 1.6);
+    flex-shrink: 0;
+  }
+  #sp-vs-portrait-blue { border: 2px solid rgba(11,196,227,0.6); box-shadow: 0 0 18px rgba(11,196,227,0.35); }
+  #sp-vs-portrait-red  { border: 2px solid rgba(232,64,87,0.6);  box-shadow: 0 0 18px rgba(232,64,87,0.35);  }
+  .sp-vs-name {
+    font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 0.5px;
+    font-size: calc(var(--mp-font-lg) * 1.2); line-height: 1.1; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+  #sp-vs-side-blue .sp-vs-name { color: #0bc4e3; text-shadow: 0 0 10px rgba(11,196,227,0.4); }
+  #sp-vs-side-red  .sp-vs-name { color: #e84057; text-shadow: 0 0 10px rgba(232,64,87,0.4);  }
+  .sp-vs-champ-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--mp-font-sm); color: rgba(255,255,255,0.3); text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+  .sp-vs-center {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;
+  }
+  .sp-vs-text {
+    font-family: 'Cinzel', serif; font-weight: 900; letter-spacing: 5px;
+    color: rgba(200,170,110,0.9); font-size: calc(var(--mp-font-lg) * 2.4);
+    text-shadow: 0 0 20px rgba(200,170,110,0.5);
+  }
+
+  /* Animation sequence — driven by #stats-panel.playing */
+
+  /* Whole panel in/out */
+  #stats-panel.playing  { animation: kPanelIn  0.53s ease forwards; }
+  #stats-panel.leaving  { animation: kPanelOut 0.38s ease forwards; }
+  #stats-panel.leaving #sp-overlay { opacity: 0; }
+
+  /* Phase 1: text fades in at 0.6s, holds, fades out at 1.69s */
+  #stats-panel.playing #sp-phase-text {
+    animation: kFadeIn 0.45s 0.6s ease both, kFadeOut 0.45s 1.69s ease forwards;
+  }
+  /* Phase 2: VS fades in at 1.99s (after text gone), holds, fades out at 3.08s */
+  #stats-panel.playing #sp-phase-vs {
+    animation: kFadeIn 0.45s 1.99s ease both, kFadeOut 0.45s 3.08s ease forwards;
+  }
+  /* Overlay itself fades out once VS is gone, revealing stats underneath */
+  #stats-panel.playing #sp-overlay {
+    animation: kFadeOut 0.45s 3.3s ease forwards;
+  }
+  /* Stats content fades up into view as overlay disappears */
+  #stats-panel.playing #sp-champs,
+  #stats-panel.playing #sp-body {
+    animation: kFadeUp 0.53s 3.3s ease both;
+  }
+
+  /* Title bar */
+  #sp-title {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 12px 4px;
+    border-bottom: 1px solid rgba(200,170,110,0.15);
+    background: rgba(0,0,0,0.35);
+  }
+  .sp-title-icon { display: flex; align-items: center; flex-shrink: 0; color: rgba(200,170,110,0.6); }
+  #sp-title-lines { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  #sp-title-role {
+    font-family: 'Cinzel', serif;
+    font-size: calc(var(--mp-font-lg) * 1.4); font-weight: 900; letter-spacing: 3px;
+    color: #f0e6c0; line-height: 1;
+    text-shadow: 0 0 20px rgba(200,170,110,0.35);
+  }
+  #sp-title-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--mp-font-sm); font-weight: 600; letter-spacing: 4px;
+    text-transform: uppercase; color: rgba(200,170,110,0.45); line-height: 1;
+  }
+  #sp-time {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--mp-font-sm); letter-spacing: 2px;
+    color: rgba(200,170,110,0.3); line-height: 1; flex-shrink: 0;
+  }
+
+  /* Champions header — mirrors .mp-header exactly */
+  #sp-champs {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  #sp-champ-divider { background: rgba(200,170,110,0.1); }
+  .sp-champ-cell {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+  }
+  #sp-champ-red { flex-direction: row-reverse; }
+  .sp-champ-portrait {
+    width: calc(var(--mp-portrait) * 0.65); height: calc(var(--mp-portrait) * 0.65);
+    border-radius: 3px; object-fit: cover; object-position: center top;
+    flex-shrink: 0;
+  }
+  #sp-champ-blue .sp-champ-portrait { border: 1px solid rgba(11,196,227,0.3); }
+  #sp-champ-red  .sp-champ-portrait { border: 1px solid rgba(232,64,87,0.3); }
+  .sp-champ-names { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  #sp-champ-red .sp-champ-names { text-align: right; }
+  .sp-summoner-name {
+    font-family: 'Cinzel', serif;
+    font-size: var(--mp-font-sm); font-weight: 700; letter-spacing: 0.5px;
+    line-height: 1; color: #ddd;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sp-champ-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: calc(var(--mp-font-sm) * 0.85); letter-spacing: 0.3px;
+    line-height: 1; color: rgba(255,255,255,0.3);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Rune columns flanking the stats */
+  #sp-body {
+    display: grid;
+    grid-template-columns: 100px 1fr 100px;
+    align-items: start;
+  }
+  .sp-rune-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 0;
+    height: 100%;
+  }
+  .sp-rune-ks {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    object-fit: contain;
+    background: rgba(255,255,255,0.06);
+    border: 2px solid rgba(255,255,255,0.15);
+  }
+  .sp-rune-sec {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    object-fit: contain;
+    background: rgba(255,255,255,0.06);
+    border: 2px solid rgba(255,255,255,0.1);
+    opacity: 0.85;
+  }
+  #sp-runes-blue .sp-rune-ks  { border-color: rgba(11,196,227,0.5);  box-shadow: 0 0 8px rgba(11,196,227,0.25); }
+  #sp-runes-blue .sp-rune-sec { border-color: rgba(11,196,227,0.3); }
+  #sp-runes-red  .sp-rune-ks  { border-color: rgba(232,64,87,0.5);   box-shadow: 0 0 8px rgba(232,64,87,0.25); }
+  #sp-runes-red  .sp-rune-sec { border-color: rgba(232,64,87,0.3); }
+  .sp-rune-ks.broken, .sp-rune-sec.broken { opacity: 0.1; filter: grayscale(1); }
+
+  /* Stat rows: value — LABEL — value, bar under label */
+  #sp-stats { padding: 4px 0 8px; }
+
+  .sp-row {
+    display: grid;
+    grid-template-columns: 1fr 288px 1fr;
+    align-items: center;
+    padding: 5px 0;
+    gap: 0;
+  }
+
+  .sp-val-blue, .sp-val-red {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: calc(var(--mp-font-lg) * 1.4); font-weight: 700; letter-spacing: 0.3px;
+    line-height: 1; padding: 0 8px;
+  }
+  .sp-val-blue { color: rgba(255,255,255,0.35); text-align: right; }
+  .sp-val-red  { color: rgba(255,255,255,0.35); text-align: left;  }
+  .sp-val-blue.winner { color: #0bc4e3; text-shadow: 0 0 8px rgba(11,196,227,0.5); }
+  .sp-val-red.winner  { color: #e84057; text-shadow: 0 0 8px rgba(232,64,87,0.5);  }
+
+  .sp-bar-cell {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .sp-bar-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: calc(var(--mp-font-lg) * 1.7); letter-spacing: 2px; text-transform: uppercase;
+    color: rgba(200,170,110,0.6); line-height: 1; white-space: nowrap;
+  }
+  .sp-bar-track {
+    width: 100%; height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 1px; overflow: hidden; display: flex;
+  }
+  .sp-bar-blue {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(11,196,227,0.4), rgba(11,196,227,0.8));
+    transition: width 0.6s ease;
+  }
+  .sp-divider { background: rgba(200,170,110,0.1); }
+
+  .sp-bar-red {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(232,64,87,0.8), rgba(232,64,87,0.4));
+    transition: width 0.6s ease;
+  }
+
+  /* ═══════════════════════════════════════════
+     BARON & ELDER BUFF PANELS — top corner
+     ═══════════════════════════════════════════ */
+
+  .buff-panel {
+    position: absolute;
+    top: 0;
+    width: 165px;
+    background: rgba(2, 8, 18, 0.92);
+    border: 1px solid rgba(200,170,110,0.25);
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    opacity: 0;
+    transform: translateY(-110%);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    z-index: 50;
+  }
+  .buff-panel.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .buff-panel.blue { left: 20px; }
+  .buff-panel.red  { right: 20px; }
+
+  .buff-panel.baron { border-bottom: 2px solid rgba(168,85,247,1); }
+  .buff-panel.elder { border-bottom: 2px solid rgba(255,160,50,1); }
+  .buff-panel.baron.blue { left: 20px; }
+  .buff-panel.baron.red  { right: 20px; }
+  .buff-panel.elder.blue { left: 20px; top: 58px; }
+  .buff-panel.elder.red  { right: 20px; top: 58px; }
+
+  .buff-icon {
+    width: 28px; height: 28px;
+    object-fit: contain;
+    mix-blend-mode: screen;
+    flex-shrink: 0;
+  }
+  .buff-info {
+    display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;
+  }
+  .buff-team-name {
+    font-family: 'Cinzel', serif;
+    font-size: 11px; font-weight: 900; letter-spacing: 2px;
+    line-height: 1; color: #ddd;
+  }
+  .buff-timer {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    line-height: 1;
+  }
+  .buff-panel.baron .buff-timer { color: rgba(168,85,247,1); }
+  .buff-panel.elder .buff-timer { color: rgba(255,160,50,1); }
+  .buff-progress {
+    width: 100%; height: 2px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 1px; overflow: hidden;
+    margin-top: 2px;
+  }
+  .buff-bar {
+    height: 100%;
+    transition: width 0.5s linear;
+  }
+  .buff-panel.baron .buff-bar { background: linear-gradient(90deg, rgba(168,85,247,0.4), rgba(168,85,247,0.9)); }
+  .buff-panel.elder .buff-bar { background: rgba(255,160,50,0.95); }
+
+  /* ═══════════════════════════════════════════
+     CHAMPION BUFF STRIPS — left/right edges
+     ═══════════════════════════════════════════ */
+
+  .champ-strip {
+    position: absolute;
+    top: 35.5%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: var(--strip-gap, 6px);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 10;
+  }
+  .champ-strip.visible { opacity: 1; }
+  .champ-strip.blue-strip { left: 29px; }
+  .champ-strip.red-strip  { right: 34px; }
+
+  /* Slots are fully transparent — game HUD shows champion portraits underneath */
+  .cs-slot {
+    width: var(--strip-sz, 42px); height: var(--strip-sz, 42px);
     position: relative;
+    overflow: visible;
+    background: transparent;
+  }
+
+  /* SVG border — baron only: square outline with quarter-circle arc at ult-circle corner */
+  .cs-border-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .cs-border-path {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  @keyframes kBaronPulse {
+    0%, 100% { stroke-opacity: 0.22; filter: drop-shadow(0 0 1px rgba(168,85,247,0.3)); }
+    50%       { stroke-opacity: 1;    filter: drop-shadow(0 0 6px rgba(168,85,247,0.9)); }
+  }
+
+  .cs-slot.cs-baron .cs-border-path {
+    stroke: rgba(168,85,247,1);
+    animation: kBaronPulse 1.8s ease-in-out infinite;
+  }
+  .cs-slot.cs-dead .cs-border-path {
+    stroke: transparent !important;
+    animation: none !important;
+  }
+
+  /* Elder — vertical gradient line on the outer edge of each slot */
+  .cs-elder-line {
+    position: absolute;
+    top: 15px;
+    bottom: -30px;
+    width: 3px;
+    border-radius: 2px;
+    opacity: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(100,80,60,0.2)   0%,
+      rgba(255,160,50,0.95) 50%,
+      rgba(100,80,60,0.2)  100%
+    );
+  }
+  .blue-strip .cs-elder-line { right: -5px; }
+  .red-strip  .cs-elder-line { left:  -5px; }
+
+  @keyframes kElderLinePulse {
+    0%, 100% { opacity: 0.2;  filter: drop-shadow(0 0 1px rgba(255,160,50,0.2)); }
+    50%       { opacity: 1;   filter: drop-shadow(0 0 5px rgba(255,160,50,0.85)); }
+  }
+
+  .cs-slot.cs-elder .cs-elder-line {
+    animation: kElderLinePulse 1.8s ease-in-out infinite;
+  }
+  .cs-slot.cs-dead .cs-elder-line {
+    opacity: 0 !important;
+    animation: none !important;
   }
 </style>
 </head>
 <body>
 
-  <!-- LEFT BADGE (dots on left, mirrored) -->
+  <!-- LEFT BADGE -->
   <div class="badge" id="badge-left">
     <div class="badge-dots" id="left-dots"></div>
     <div class="badge-main">
@@ -210,7 +879,7 @@
     </div>
   </div>
 
-  <!-- RIGHT BADGE (dots on right) -->
+  <!-- RIGHT BADGE -->
   <div class="badge" id="badge-right">
     <div class="badge-main">
       <div class="team-abbr" id="right-abbr"></div>
@@ -232,18 +901,199 @@
     <div class="win-score" id="win-score-text"></div>
   </div>
 
+  <!-- MATCHUP PANEL (bottom-left, slides up) -->
+  <div id="matchup-panel">
+    <div id="mp-title">
+      <div class="mp-title-icon" id="mp-role-icon"></div>
+      <div id="mp-title-text">HEAD TO HEAD</div>
+    </div>
+    <div id="mp-vs-wrap"><div id="mp-vs-bar">
+      <div class="mp-vs-inner">
+        <div class="mp-vs-side" id="mp-vs-blue">
+          <img class="mp-vs-portrait" id="mp-vs-blue-portrait" src="" alt="">
+          <div class="mp-vs-names">
+            <div class="mp-vs-name" id="mp-vs-blue-name"></div>
+            <div class="mp-vs-champ" id="mp-vs-blue-champ"></div>
+          </div>
+        </div>
+        <div class="mp-vs-separator">VS</div>
+        <div class="mp-vs-side" id="mp-vs-red">
+          <img class="mp-vs-portrait" id="mp-vs-red-portrait" src="" alt="">
+          <div class="mp-vs-names">
+            <div class="mp-vs-name" id="mp-vs-red-name"></div>
+            <div class="mp-vs-champ" id="mp-vs-red-champ"></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div id="mp-body-wrap"><div id="mp-body">
+      <!-- Blue player -->
+      <div class="mp-player" id="mp-blue">
+        <div class="mp-header">
+          <img class="mp-portrait" id="mp-blue-portrait" src="" alt="">
+          <div class="mp-names">
+            <div class="mp-summoner" id="mp-blue-summoner"></div>
+            <div class="mp-champ"    id="mp-blue-champ"></div>
+          </div>
+        </div>
+        <div class="mp-rune-row mp-keystone-row">
+          <img id="mp-blue-keystone-img" src="" alt="">
+          <div class="mp-rune-text">
+            <div class="mp-rune-main" id="mp-blue-keystone-name"></div>
+            <div class="mp-rune-sub"  id="mp-blue-primary-tree"></div>
+          </div>
+        </div>
+        <div class="mp-rune-row mp-secondary-row">
+          <img id="mp-blue-secondary-img" src="" alt="">
+          <div class="mp-rune-text">
+            <div class="mp-rune-main" id="mp-blue-secondary-tree"></div>
+          </div>
+        </div>
+        <div class="mp-shards" id="mp-blue-shards"></div>
+      </div>
+      <!-- Divider -->
+      <div class="mp-divider"></div>
+      <!-- Red player -->
+      <div class="mp-player" id="mp-red">
+        <div class="mp-header">
+          <img class="mp-portrait" id="mp-red-portrait" src="" alt="">
+          <div class="mp-names">
+            <div class="mp-summoner" id="mp-red-summoner"></div>
+            <div class="mp-champ"    id="mp-red-champ"></div>
+          </div>
+        </div>
+        <div class="mp-rune-row mp-keystone-row">
+          <img id="mp-red-keystone-img" src="" alt="">
+          <div class="mp-rune-text">
+            <div class="mp-rune-main" id="mp-red-keystone-name"></div>
+            <div class="mp-rune-sub"  id="mp-red-primary-tree"></div>
+          </div>
+        </div>
+        <div class="mp-rune-row mp-secondary-row">
+          <img id="mp-red-secondary-img" src="" alt="">
+          <div class="mp-rune-text">
+            <div class="mp-rune-main" id="mp-red-secondary-tree"></div>
+          </div>
+        </div>
+        <div class="mp-shards" id="mp-red-shards"></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- STATS PANEL (bottom-left, slides up) -->
+  <div id="stats-panel">
+    <div id="sp-title">
+      <div class="sp-title-icon" id="sp-role-icon"></div>
+      <div id="sp-title-lines">
+        <div id="sp-title-role">—</div>
+        <div id="sp-title-sub">Head-to-Head</div>
+      </div>
+      <div id="sp-time"></div>
+    </div>
+    <div id="sp-content-area">
+      <!-- Overlay: covers stats during intro phases -->
+      <div id="sp-overlay">
+        <!-- Phase 1: title text only -->
+        <div id="sp-phase-text">
+          <div class="sp-phase-title">HEAD TO HEAD</div>
+          <div class="sp-phase-deco">
+            <div class="sp-phase-deco-line"></div>
+            <div class="sp-phase-deco-diamond"></div>
+            <div class="sp-phase-deco-line r"></div>
+          </div>
+          <div class="sp-phase-role-row">
+            <img id="sp-phase-role-icon" src="" alt="">
+            <div class="sp-phase-sub" id="sp-phase-role-name"></div>
+          </div>
+        </div>
+        <!-- Phase 2: VS champion portraits -->
+        <div id="sp-phase-vs">
+          <div class="sp-vs-side" id="sp-vs-side-blue">
+            <img class="sp-vs-portrait" id="sp-vs-portrait-blue" src="" alt="">
+            <div class="sp-vs-name"       id="sp-vs-name-blue"></div>
+            <div class="sp-vs-champ-name" id="sp-vs-champ-blue"></div>
+          </div>
+          <div class="sp-vs-center">
+            <div class="sp-vs-text">VS</div>
+          </div>
+          <div class="sp-vs-side" id="sp-vs-side-red">
+            <img class="sp-vs-portrait" id="sp-vs-portrait-red" src="" alt="">
+            <div class="sp-vs-name"       id="sp-vs-name-red"></div>
+            <div class="sp-vs-champ-name" id="sp-vs-champ-red"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Stats content — always rendered (sets panel height), fades in on phase 3 -->
+      <div id="sp-champs">
+        <div class="sp-champ-cell" id="sp-champ-blue">
+          <img class="sp-champ-portrait" id="sp-portrait-blue" src="" alt="">
+          <div class="sp-champ-names">
+            <div class="sp-summoner-name" id="sp-summoner-blue"></div>
+            <div class="sp-champ-name"   id="sp-name-blue"></div>
+          </div>
+        </div>
+        <div class="sp-divider" id="sp-champ-divider"></div>
+        <div class="sp-champ-cell" id="sp-champ-red">
+          <img class="sp-champ-portrait" id="sp-portrait-red" src="" alt="">
+          <div class="sp-champ-names">
+            <div class="sp-summoner-name" id="sp-summoner-red"></div>
+            <div class="sp-champ-name"   id="sp-name-red"></div>
+          </div>
+        </div>
+      </div>
+      <div id="sp-body">
+        <div class="sp-rune-col" id="sp-runes-blue">
+          <img class="sp-rune-ks"  id="sp-blue-ks"  src="" alt="">
+          <img class="sp-rune-sec" id="sp-blue-sec" src="" alt="">
+        </div>
+        <div id="sp-stats"></div>
+        <div class="sp-rune-col" id="sp-runes-red">
+          <img class="sp-rune-ks"  id="sp-red-ks"  src="" alt="">
+          <img class="sp-rune-sec" id="sp-red-sec" src="" alt="">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARON BUFF PANEL -->
+  <div class="buff-panel baron" id="baron-panel">
+    <img class="buff-icon" src="https://image.pngaaa.com/378/5130378-middle.png" alt="">
+    <div class="buff-info">
+      <div class="buff-team-name" id="baron-team"></div>
+      <div class="buff-timer" id="baron-timer">0:00</div>
+      <div class="buff-progress"><div class="buff-bar" id="baron-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- ELDER BUFF PANEL -->
+  <div class="buff-panel elder" id="elder-panel">
+    <img class="buff-icon" src="https://image.pngaaa.com/488/5733488-middle.png" alt="">
+    <div class="buff-info">
+      <div class="buff-team-name" id="elder-team"></div>
+      <div class="buff-timer" id="elder-timer">0:00</div>
+      <div class="buff-progress"><div class="buff-bar" id="elder-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- CHAMPION BUFF STRIPS -->
+  <div class="champ-strip blue-strip" id="strip-blue"></div>
+  <div class="champ-strip red-strip"  id="strip-red"></div>
+
 <script>
   // =====================================================================
   //  CONFIGURATION
   // =====================================================================
 
-  const SCALE       = 1.3;   // Overall size multiplier. 1.0 = default, 1.5 = 50% bigger
-  const BADGE_LEFT  = 480;    // px from the LEFT  edge of screen
-  const BADGE_RIGHT = 480;    // px from the RIGHT edge of screen
+  const SCALE         = 1.3;
+  const MATCHUP_SCALE = 1.87;
+  const STRIP_SCALE   = 1.0;  // Champion buff strip size
+  const BADGE_LEFT  = 480;
+  const BADGE_RIGHT = 480;
 
   // =====================================================================
 
   const SERVER = 'http://localhost:8765';
+  const DD     = 'https://ddragon.leagueoflegends.com';
 
   const r = document.documentElement.style;
   r.setProperty('--badge-h',        `${44  * SCALE}px`);
@@ -261,7 +1111,20 @@
   r.setProperty('--radius',         `${5   * SCALE}px`);
   r.setProperty('--badge-left',     `${BADGE_LEFT}px`);
   r.setProperty('--badge-right',    `${BADGE_RIGHT}px`);
+  // Stats + Matchup panels share the same size vars
+  // Matchup panel vars
+  r.setProperty('--mp-width',    `${320 * MATCHUP_SCALE}px`);
+  r.setProperty('--mp-portrait', `${36  * MATCHUP_SCALE}px`);
+  r.setProperty('--mp-ks-sz',    `${32  * MATCHUP_SCALE}px`);
+  r.setProperty('--mp-sec-sz',   `${22  * MATCHUP_SCALE}px`);
+  r.setProperty('--mp-shard-sz', `${14  * MATCHUP_SCALE}px`);
+  r.setProperty('--mp-font-lg',  `${10  * MATCHUP_SCALE}px`);
+  r.setProperty('--mp-font-sm',  `${9   * MATCHUP_SCALE}px`);
+  r.setProperty('--strip-sz',   `${42  * STRIP_SCALE}px`);
+  r.setProperty('--strip-gap',  `${61   * STRIP_SCALE}px`);
 
+  // =====================================================================
+  //  Scoreboard
   // =====================================================================
 
   let lastTs = 0;
@@ -283,7 +1146,7 @@
 
     document.getElementById('left-abbr').textContent  = left.abbr;
     document.getElementById('right-abbr').textContent = right.abbr;
-    const fmtSeed = s => s ? (s.startsWith('#') ? s : '#' + s) : '';
+    const fmtSeed = v => v ? (v.startsWith('#') ? v : '#' + v) : '';
     document.getElementById('left-seed').textContent  = fmtSeed(left.seed);
     document.getElementById('right-seed').textContent = fmtSeed(right.seed);
 
@@ -295,7 +1158,9 @@
   }
 
   function showWinBanner(side, s) {
-    const wk     = s.leftTeam === 'team1' ? (side === 'left' ? 'team1' : 'team2') : (side === 'left' ? 'team2' : 'team1');
+    const wk     = s.leftTeam === 'team1'
+      ? (side === 'left' ? 'team1' : 'team2')
+      : (side === 'left' ? 'team2' : 'team1');
     const winner = s[wk];
     const loser  = s[wk === 'team1' ? 'team2' : 'team1'];
 
@@ -313,16 +1178,517 @@
     winnerTimer = setTimeout(() => b.classList.remove('show'), 4500);
   }
 
+  // =====================================================================
+  //  Matchup panel
+  // =====================================================================
+
+  let ddVer         = '15.5.1';
+  let runeMap       = {};
+  let runeDataReady = false;
+  let pendingMatchup = null;
+  let lastActiveMatchup = undefined;
+
+  const STAT_ICONS = {
+    5008: 'perk-images/StatMods/StatModsAdaptiveForceIcon.png',
+    5005: 'perk-images/StatMods/StatModsAttackSpeedIcon.png',
+    5007: 'perk-images/StatMods/StatModsCDRScalingIcon.png',
+    5002: 'perk-images/StatMods/StatModsArmorIcon.png',
+    5003: 'perk-images/StatMods/StatModsMagicResIcon.MagicResist_Fix.png',
+    5001: 'perk-images/StatMods/StatModsHealthScalingIcon.png',
+  };
+
+  // Rune tree colours by ID
+  const TREE_COLORS = {
+    8000: '#c8a84b', 8100: '#e84057', 8200: '#9fbbcc',
+    8300: '#49e0c2', 8400: '#a0c554',
+  };
+  function treeColor(id) { return TREE_COLORS[id] || '#c8aa6e'; }
+
+  // Rank tier colours
+
+  const ROLE_DISPLAY = ['TOP', 'JUNGLE', 'MID', 'BOT', 'SUPPORT'];
+  const ROLE_ICON_URLS = [
+    'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/icon-position-top.png',
+    'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/icon-position-jungle.png',
+    'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/icon-position-middle.png',
+    'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/icon-position-bottom.png',
+    'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/icon-position-utility.png',
+  ];
+
+  async function initRuneData() {
+    try {
+      const versions = await fetch(`${DD}/api/versions.json`).then(r => r.json());
+      ddVer = versions[0];
+      const trees = await fetch(`${DD}/cdn/${ddVer}/data/en_US/runesReforged.json`).then(r => r.json());
+      trees.forEach(tree => {
+        runeMap[tree.id] = { name: tree.name, icon: tree.icon };
+        tree.slots.forEach(slot => slot.runes.forEach(rune => {
+          runeMap[rune.id] = { name: rune.name, icon: rune.icon };
+        }));
+      });
+      runeDataReady = true;
+      if (pendingMatchup) {
+        const { roleIdx, blue, red } = pendingMatchup;
+        pendingMatchup = null;
+        populateMatchup(roleIdx, blue, red);
+      }
+    } catch(e) { console.warn('Could not load rune data:', e); }
+  }
+
+  function champKey(name) {
+    const overrides = {
+      "aurelion sol":"AurelionSol","bel'veth":"Belveth","belveth":"Belveth",
+      "cho'gath":"Chogath","dr. mundo":"DrMundo","dr mundo":"DrMundo",
+      "jarvan iv":"JarvanIV","k'sante":"KSante","kha'zix":"Khazix",
+      "kog'maw":"KogMaw","lee sin":"LeeSin","master yi":"MasterYi",
+      "miss fortune":"MissFortune","nunu & willump":"Nunu","nunu":"Nunu",
+      "rek'sai":"RekSai","renata glasc":"Renata","tahm kench":"TahmKench",
+      "twisted fate":"TwistedFate","vel'koz":"Velkoz","wukong":"MonkeyKing","xin zhao":"XinZhao",
+    };
+    const lower = name.toLowerCase().trim();
+    if (overrides[lower]) return overrides[lower];
+    return name.replace(/[^a-zA-Z0-9 ]/g, '').split(' ').filter(Boolean)
+               .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+  }
+
+  function setImg(el, runeId) {
+    let src = null;
+    if (runeMap[runeId])    src = `${DD}/cdn/img/${runeMap[runeId].icon}`;
+    if (STAT_ICONS[runeId]) src = `${DD}/cdn/img/${STAT_ICONS[runeId]}`;
+    if (src) { el.src = src; el.onerror = () => el.classList.add('broken'); }
+    else el.classList.add('broken');
+  }
+
+  function fillPlayer(side, player) {
+    const runes = player.runes || {};
+    const color = side === 'blue' ? '#0bc4e3' : '#e84057';
+
+    // Portrait
+    document.getElementById(`mp-${side}-portrait`).src =
+      `${DD}/cdn/${ddVer}/img/champion/${champKey(player.championName)}.png`;
+
+    // Header names
+    document.getElementById(`mp-${side}-summoner`).textContent = (player.summonerName || '').toUpperCase();
+    document.getElementById(`mp-${side}-champ`).textContent    = player.championName || '';
+
+    // Keystone
+    const ks          = runes.keystone        || {};
+    const primaryTree = runes.primaryRuneTree || {};
+    const pColor      = treeColor(primaryTree.id);
+    const ksImg       = document.getElementById(`mp-${side}-keystone-img`);
+    setImg(ksImg, ks.id);
+    ksImg.style.borderColor = pColor + '55';
+    ksImg.style.boxShadow   = `0 0 8px ${pColor}22`;
+    document.getElementById(`mp-${side}-keystone-name`).textContent = ks.displayName || runeMap[ks.id]?.name || '';
+    document.getElementById(`mp-${side}-keystone-name`).style.color = pColor;
+    document.getElementById(`mp-${side}-primary-tree`).textContent  = primaryTree.displayName || runeMap[primaryTree.id]?.name || '';
+    document.getElementById(`mp-${side}-primary-tree`).style.color  = pColor;
+
+    // Secondary tree
+    const secTree = runes.secondaryRuneTree || {};
+    const sColor  = treeColor(secTree.id);
+    const secImg  = document.getElementById(`mp-${side}-secondary-img`);
+    setImg(secImg, secTree.id);
+    secImg.style.borderColor = sColor + '44';
+    secImg.style.boxShadow   = `0 0 6px ${sColor}22`;
+    document.getElementById(`mp-${side}-secondary-tree`).textContent = secTree.displayName || runeMap[secTree.id]?.name || '';
+    document.getElementById(`mp-${side}-secondary-tree`).style.color = sColor;
+
+    // Shards
+    const shardsEl = document.getElementById(`mp-${side}-shards`);
+    shardsEl.innerHTML = '';
+    if (runes.statRunes) {
+      runes.statRunes.forEach(r => {
+        const img = document.createElement('img');
+        setImg(img, r.id);
+        shardsEl.appendChild(img);
+      });
+    }
+  }
+
+  function populateMatchup(roleIdx, blue, red) {
+    if (!runeDataReady) { pendingMatchup = { roleIdx, blue, red }; return; }
+    hideStatsPanel();
+
+    // Fill content
+    document.getElementById('mp-title-text').textContent = `${ROLE_DISPLAY[roleIdx]} HEAD TO HEAD`;
+    document.getElementById('mp-role-icon').innerHTML =
+      `<img src="${ROLE_ICON_URLS[roleIdx]}" style="width:14px;height:14px;object-fit:contain;filter:brightness(0.7)">`;
+
+    document.getElementById('mp-vs-blue-portrait').src = `${DD}/cdn/${ddVer}/img/champion/${champKey(blue.championName)}.png`;
+    document.getElementById('mp-vs-red-portrait').src  = `${DD}/cdn/${ddVer}/img/champion/${champKey(red.championName)}.png`;
+    document.getElementById('mp-vs-blue-name').textContent  = (blue.summonerName || '').toUpperCase();
+    document.getElementById('mp-vs-red-name').textContent   = (red.summonerName  || '').toUpperCase();
+    document.getElementById('mp-vs-blue-champ').textContent = blue.championName || '';
+    document.getElementById('mp-vs-red-champ').textContent  = red.championName  || '';
+
+    fillPlayer('blue', blue);
+    fillPlayer('red',  red);
+
+    const panel = document.getElementById('matchup-panel');
+    const wasPlaying = panel.classList.contains('playing') || panel.classList.contains('leaving');
+
+    function startPlaying() {
+      panel.classList.remove('playing', 'leaving');
+      void panel.offsetWidth; // reflow resets all keyframes to their from-state
+      panel.classList.add('playing');
+    }
+
+    if (wasPlaying) {
+      // Slide the current panel down, then slide the new one up
+      panel.classList.remove('playing');
+      panel.classList.add('leaving');
+      // Wait for kPanelOut (0.5s) then swap content and play in
+      const t = setTimeout(() => {
+        startPlaying();
+      }, 500);
+      // Store timeout so hideMatchup can cancel it
+      panel._leaveTimer = t;
+    } else {
+      startPlaying();
+    }
+  }
+
+  function hideMatchup() {
+    const panel = document.getElementById('matchup-panel');
+    clearTimeout(panel._leaveTimer);
+    const isVisible = panel.classList.contains('playing');
+    panel.classList.remove('playing', 'leaving');
+    if (isVisible) {
+      void panel.offsetWidth;
+      panel.classList.add('leaving');
+      panel._leaveTimer = setTimeout(() => panel.classList.remove('leaving'), 520);
+    }
+  }
+
+
+  // =====================================================================
+  //  Stats panel
+  // =====================================================================
+
+  let lastActiveStats = undefined;
+
+  const STAT_DEFS = [
+    { key: 'level',             label: 'LVL',       higher: true },
+    { key: 'kda',               label: 'KDA',       higher: true, fmt: v => v.toFixed(2) },
+    { key: 'visionScore',       label: 'VISION',    higher: true },
+    { key: 'killParticipation', label: 'KP',        higher: true, fmt: v => v + '%' },
+    { key: 'gold',              label: 'ITEM GOLD', higher: true, fmt: v => v.toLocaleString() },
+  ];
+
+  // Populate all DOM content without touching animation classes
+  function updateStatsContent(roleIdx, blue, red, gameTime) {
+    document.getElementById('sp-title-role').textContent = ROLE_DISPLAY[roleIdx];
+    document.getElementById('sp-role-icon').innerHTML =
+      `<img src="${ROLE_ICON_URLS[roleIdx]}" style="width:32px;height:32px;object-fit:contain;filter:brightness(0.7)">`;
+
+    const mins = Math.floor(gameTime/60);
+    const secs = String(gameTime%60).padStart(2,'0');
+    document.getElementById('sp-time').textContent = `${mins}:${secs}`;
+
+    // Phase 1 role icon + name
+    const roleIcon = document.getElementById('sp-phase-role-icon');
+    roleIcon.src = ROLE_ICON_URLS[roleIdx];
+    document.getElementById('sp-phase-role-name').textContent = ROLE_DISPLAY[roleIdx];
+
+    // Phase 2 VS portraits + names
+    document.getElementById('sp-vs-portrait-blue').src = `${DD}/cdn/${ddVer}/img/champion/${champKey(blue.championName)}.png`;
+    document.getElementById('sp-vs-portrait-red').src  = `${DD}/cdn/${ddVer}/img/champion/${champKey(red.championName)}.png`;
+    document.getElementById('sp-vs-name-blue').textContent  = (blue.summonerName || '').toUpperCase();
+    document.getElementById('sp-vs-name-red').textContent   = (red.summonerName  || '').toUpperCase();
+    document.getElementById('sp-vs-champ-blue').textContent = blue.championName || '';
+    document.getElementById('sp-vs-champ-red').textContent  = red.championName  || '';
+
+    // Rune icons
+    function setSpRune(id, runeId) {
+      const img = document.getElementById(id);
+      if (!img) return;
+      img.classList.remove('broken');
+      setImg(img, runeId);
+    }
+    const br = blue.runes || {};
+    const rr = red.runes  || {};
+    setSpRune('sp-blue-ks',  (br.keystone         || {}).id);
+    setSpRune('sp-blue-sec', (br.secondaryRuneTree || {}).id);
+    setSpRune('sp-red-ks',   (rr.keystone         || {}).id);
+    setSpRune('sp-red-sec',  (rr.secondaryRuneTree || {}).id);
+
+    // Champions header
+    document.getElementById('sp-summoner-blue').textContent = (blue.summonerName || '').toUpperCase();
+    document.getElementById('sp-name-blue').textContent      = blue.championName || '';
+    document.getElementById('sp-summoner-red').textContent  = (red.summonerName  || '').toUpperCase();
+    document.getElementById('sp-name-red').textContent       = red.championName  || '';
+    document.getElementById('sp-portrait-blue').src =
+      `${DD}/cdn/${ddVer}/img/champion/${champKey(blue.championName)}.png`;
+    document.getElementById('sp-portrait-red').src =
+      `${DD}/cdn/${ddVer}/img/champion/${champKey(red.championName)}.png`;
+
+    // Stat rows
+    const container = document.getElementById('sp-stats');
+    container.innerHTML = '';
+    STAT_DEFS.forEach(def => {
+      const bv = blue[def.key] ?? 0;
+      const rv = red[def.key]  ?? 0;
+      const fmt = def.fmt || (v => v);
+      const total = bv + rv;
+      const bPct  = total > 0 ? Math.round(bv / total * 100) : 50;
+      const rPct  = 100 - bPct;
+      const bWins = def.higher ? bv > rv : bv < rv;
+      const rWins = def.higher ? rv > bv : rv < bv;
+      const labelColor = bWins ? '#0bc4e3' : rWins ? '#e84057' : 'rgba(200,170,110,0.6)';
+      const row = document.createElement('div');
+      row.className = 'sp-row';
+      row.innerHTML = `
+        <span class="sp-val-blue${bWins?' winner':''}">${fmt(bv)}</span>
+        <div class="sp-bar-cell">
+          <div class="sp-bar-label" style="color:${labelColor}">${def.label}</div>
+          <div class="sp-bar-track">
+            <div class="sp-bar-blue" style="width:${bPct}%"></div>
+            <div class="sp-bar-red"  style="width:${rPct}%"></div>
+          </div>
+        </div>
+        <span class="sp-val-red${rWins?' winner':''}">${fmt(rv)}</span>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function showStatsPanel(roleIdx, blue, red, gameTime) {
+    updateStatsContent(roleIdx, blue, red, gameTime);
+    hideMatchup();
+    const panel = document.getElementById('stats-panel');
+    panel.classList.remove('playing', 'leaving');
+    clearTimeout(panel._leaveTimer);
+    void panel.offsetWidth;
+    panel.classList.add('playing');
+  }
+
+  function hideStatsPanel() {
+    const panel = document.getElementById('stats-panel');
+    clearTimeout(panel._leaveTimer);
+    const isVisible = panel.classList.contains('playing');
+    panel.classList.remove('playing', 'leaving');
+    if (isVisible) {
+      void panel.offsetWidth;
+      panel.classList.add('leaving');
+      panel._leaveTimer = setTimeout(() => panel.classList.remove('leaving'), 400);
+    }
+  }
+
+  // =====================================================================
+  //  Baron & Elder Buff Panels
+  // =====================================================================
+
+  const buffState = {
+    baron: { visible: false, endWallTime: 0, tickId: null, lastKey: '' },
+    elder: { visible: false, endWallTime: 0, tickId: null, lastKey: '' },
+  };
+
+  function updateBuffPanel(type, buffData) {
+    const panel = document.getElementById(`${type}-panel`);
+    const bs = buffState[type];
+
+    if (!buffData) {
+      if (bs.visible) {
+        bs.visible = false;
+        clearInterval(bs.tickId);
+        bs.tickId = null;
+        bs.lastKey = '';
+        panel.classList.remove('visible');
+        panel.className = `buff-panel ${type}`;
+      }
+      return;
+    }
+
+    const key = `${buffData.team}-${buffData.triggeredAt}`;
+    if (key === bs.lastKey) return; // Same buff, already tracking
+    bs.lastKey = key;
+
+    // Position: blue = left, red = right
+    panel.className = `buff-panel ${type} ${buffData.team}`;
+
+    // Team name
+    document.getElementById(`${type}-team`).textContent = buffData.teamAbbr || buffData.team.toUpperCase();
+
+    // Compute end time
+    bs.endWallTime = buffData.triggeredAt + (buffData.duration * 1000);
+    bs.visible = true;
+    panel.classList.add('visible');
+
+    // Tick the timer
+    if (bs.tickId) clearInterval(bs.tickId);
+    const tick = () => {
+      const remaining = Math.max(0, bs.endWallTime - Date.now()) / 1000;
+      if (remaining <= 0) {
+        clearInterval(bs.tickId);
+        bs.tickId = null;
+        bs.visible = false;
+        bs.lastKey = '';
+        panel.classList.remove('visible');
+        return;
+      }
+      const m = Math.floor(remaining / 60);
+      const sec = String(Math.floor(remaining % 60)).padStart(2, '0');
+      document.getElementById(`${type}-timer`).textContent = `${m}:${sec}`;
+      const pct = (remaining / buffData.duration) * 100;
+      document.getElementById(`${type}-bar`).style.width = `${pct}%`;
+    };
+    tick();
+    bs.tickId = setInterval(tick, 500);
+  }
+
+  // =====================================================================
+  //  Champion Buff Strips
+  // =====================================================================
+
+  let lastStripKeyBlue = '';
+  let lastStripKeyRed  = '';
+
+  function buildBorderPath(S, arcR, side) {
+    if (side === 'blue') {
+      return `M 0,0 L ${S - arcR},0 A ${arcR},${arcR} 0 0 0 ${S},${arcR} L ${S},${S} L 0,${S} Z`;
+    } else {
+      return `M ${S},0 L ${arcR},0 A ${arcR},${arcR} 0 0 1 0,${arcR} L 0,${S} L ${S},${S} Z`;
+    }
+  }
+
+  function buildStripSide(side, players, offset, syncDelay) {
+    const strip = document.getElementById(`strip-${side}`);
+    strip.innerHTML = '';
+    const S    = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--strip-sz')) || 42;
+    const arcR = S * 0.4;
+    const ns   = 'http://www.w3.org/2000/svg';
+    for (let i = 0; i < 5; i++) {
+      const p = players[offset + i];
+      if (!p) continue;
+      const slot = document.createElement('div');
+      slot.className = 'cs-slot';
+      slot.id = `cs-${side}-${i}`;
+
+      // SVG baron border
+      const svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('class', 'cs-border-svg');
+      svg.setAttribute('viewBox', `0 0 ${S} ${S}`);
+      svg.setAttribute('preserveAspectRatio', 'none');
+      const path = document.createElementNS(ns, 'path');
+      path.setAttribute('class', 'cs-border-path');
+      path.setAttribute('d', buildBorderPath(S, arcR, side));
+      path.style.animationDelay = syncDelay;
+      svg.appendChild(path);
+      slot.appendChild(svg);
+
+      // Elder line
+      const line = document.createElement('div');
+      line.className = 'cs-elder-line';
+      line.style.animationDelay = syncDelay;
+      slot.appendChild(line);
+
+      strip.appendChild(slot);
+    }
+  }
+
+  function updateStripSide(side, players, offset, baronOn, elderOn) {
+    const strip = document.getElementById(`strip-${side}`);
+    const shouldShow = baronOn || elderOn;
+    strip.classList.toggle('visible', shouldShow);
+    if (!shouldShow) return;
+
+    for (let i = 0; i < 5; i++) {
+      const slot = document.getElementById(`cs-${side}-${i}`);
+      if (!slot) continue;
+      const p = players[offset + i];
+      const dead = p ? !!p.isDead : false;
+      slot.classList.toggle('cs-baron', baronOn && !dead);
+      slot.classList.toggle('cs-elder', elderOn && !dead);
+      slot.classList.toggle('cs-dead', dead);
+    }
+  }
+
+  function updateChampStrips(s) {
+    if (!s.players || s.players.length < 10) return;
+
+    // Build strips if champion roster changed
+    const blueKey = s.players.slice(0, 5).map(p => p.championName).join(',');
+    const redKey  = s.players.slice(5, 10).map(p => p.championName).join(',');
+    // Calculate once so both strips share the exact same phase of the 1800ms clock
+    const syncDelay = `-${Date.now() % 1800}ms`;
+    if (blueKey !== lastStripKeyBlue) { lastStripKeyBlue = blueKey; buildStripSide('blue', s.players, 0, syncDelay); }
+    if (redKey  !== lastStripKeyRed)  { lastStripKeyRed  = redKey;  buildStripSide('red',  s.players, 5, syncDelay); }
+
+    // Determine which team has which buff
+    const bb = s.baronBuff;
+    const eb = s.elderBuff;
+    const baronBlue = bb && bb.team === 'blue';
+    const baronRed  = bb && bb.team === 'red';
+    const elderBlue = eb && eb.team === 'blue';
+    const elderRed  = eb && eb.team === 'red';
+
+    updateStripSide('blue', s.players, 0, baronBlue, elderBlue);
+    updateStripSide('red',  s.players, 5, baronRed,  elderRed);
+  }
+
+  // =====================================================================
+  //  Polling
+  // =====================================================================
+
   async function poll() {
     try {
-      const res = await fetch(`${SERVER}/state`);
+      const res = await fetch(`${SERVER}/state?t=${Date.now()}`);
       if (!res.ok) return;
       const s = await res.json();
+
       if (s.ts && s.ts !== lastTs) render(s);
+
+      // Overall visibility
+      const hidden = !!s.overlayHidden;
+      document.getElementById('badge-left').classList.toggle('hidden', hidden);
+      document.getElementById('badge-right').classList.toggle('hidden', hidden);
+      if (hidden) { hideMatchup(); hideStatsPanel(); updateBuffPanel('baron', null); updateBuffPanel('elder', null); startPolling(false); return; }
+
+      const am = (s.activeMatchup != null) ? s.activeMatchup : null;
+      if (am !== lastActiveMatchup) {
+        lastActiveMatchup = am;
+        if (am !== null && s.players && s.players[am] && s.players[am + 5]) {
+          populateMatchup(am, s.players[am], s.players[am + 5]);
+        } else {
+          hideMatchup();
+        }
+      }
+
+      const ast = (s.activeStats != null) ? s.activeStats : null;
+      if (ast !== lastActiveStats) {
+        lastActiveStats = ast;
+        if (ast !== null && s.players && s.players[ast] && s.players[ast+5]) {
+          showStatsPanel(ast, s.players[ast], s.players[ast+5], s.gameTime||0);
+        } else {
+          hideStatsPanel();
+        }
+      } else if (ast !== null && s.players) {
+        // Live data refresh on same role — update values silently, no re-animation
+        updateStatsContent(ast, s.players[ast], s.players[ast+5], s.gameTime||0);
+      }
+
+      // Buff panels
+      updateBuffPanel('baron', s.baronBuff || null);
+      updateBuffPanel('elder', s.elderBuff || null);
+
+      // Champion buff strips
+      updateChampStrips(s);
+
+      // Poll fast when a panel is active or a buff is active
+      const buffActive = !!(s.baronBuff || s.elderBuff);
+      startPolling(am !== null || ast !== null || buffActive);
     } catch(e) {}
   }
 
-  setInterval(poll, 300);
+  initRuneData();
+
+  let pollInterval = null;
+  function startPolling(fast) {
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(poll, fast ? 1000 : 2000);
+  }
+  startPolling(false);
   poll();
 </script>
 </body>
