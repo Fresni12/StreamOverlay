@@ -24,16 +24,87 @@
     align-items: stretch;
     height: var(--badge-h);
     transition: opacity 0.4s ease, transform 0.4s ease;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.7));
   }
   .badge.hidden {
-    opacity: 0;
-    transform: translateY(-110%);
     pointer-events: none;
   }
 
-  #badge-left  { right: calc(1920px - var(--badge-left)); }
-  #badge-right { left: calc(1920px - var(--badge-right)); }
+  #badge-left  {
+    right: calc(1920px - var(--badge-left));
+    transform: scaleX(-1);
+  }
+  #badge-left.hidden {
+    opacity: 0;
+    transform: scaleX(-1) translateY(-110%);
+  }
+  #badge-left .team-abbr,
+  #badge-left .team-seed {
+    transform: scaleX(-1);
+  }
 
+  #badge-right {
+    left: calc(1920px - var(--badge-right));
+    transform: scale(-1, -1);
+  }
+  #badge-right.hidden {
+    opacity: 0;
+    transform: scale(-1, -1) translateY(110%);
+  }
+  #badge-right .team-abbr,
+  #badge-right .team-seed {
+    transform: scale(-1, -1);
+  }
+
+  /* ── Accent bar: team-coloured outer edge ── */
+  .badge-accent {
+    width: var(--accent-w);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+  #badge-left  .badge-accent {
+    background: linear-gradient(to bottom, #0bc4e3 60%, rgba(11,196,227,0.4));
+    box-shadow: 2px 0 12px rgba(11,196,227,0.45);
+    order: -1;
+  }
+  #badge-right .badge-accent {
+    background: linear-gradient(to bottom, #e84057 60%, rgba(232,64,87,0.4));
+    box-shadow: -2px 0 12px rgba(232,64,87,0.45);
+    order: 1;
+  }
+
+  /* ── Main panel: angled inner edge via clip-path ── */
+  .badge-panel {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    background: rgba(3, 9, 20, 0.98);
+    position: relative;
+    z-index: 1;
+  }
+  /* Left badge: right/inner edge angled (parallelogram pointing right) */
+  #badge-left .badge-panel {
+    clip-path: polygon(0 0, 100% 0, calc(100% - var(--skew)) 100%, 0 100%);
+    padding-right: calc(var(--skew) + 4px);
+  }
+  /* Right badge: left/inner edge angled (mirror) */
+  #badge-right .badge-panel {
+    clip-path: polygon(var(--skew) 0, 100% 0, 100% 100%, 0 100%);
+    padding-left: calc(var(--skew) + 4px);
+  }
+
+  /* Subtle top highlight line inside panel */
+  .badge-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    z-index: 3;
+  }
+
+  /* ── Team name section ── */
   .badge-main {
     display: flex;
     flex-direction: column;
@@ -43,22 +114,7 @@
     padding: var(--pad-v) var(--pad-h);
     min-width: var(--main-min-w);
     position: relative;
-    background: rgba(3, 10, 22, 1);
-    border: 1px solid rgba(200,170,110,0.28);
-    border-top: 1px solid rgba(200,170,110,0.55);
-    border-bottom-color: rgba(200,170,110,0.18);
   }
-
-  .badge-main::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 15%; right: 15%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(200,170,110,0.8), transparent);
-  }
-
-  #badge-left  .badge-main { border-right: none; border-radius: 0 0 0 var(--radius); }
-  #badge-right .badge-main { border-left:  none; border-radius: 0 0 var(--radius) 0; }
 
   .team-abbr {
     font-family: 'Cinzel', serif;
@@ -68,9 +124,8 @@
     line-height: 1;
     white-space: nowrap;
   }
-
-  #badge-left  .team-abbr { color: #0bc4e3; text-shadow: 0 0 10px rgba(11,196,227,0.6); }
-  #badge-right .team-abbr { color: #e84057; text-shadow: 0 0 10px rgba(232,64,87,0.6);  }
+  #badge-left  .team-abbr { color: #0bc4e3; text-shadow: 0 0 16px rgba(11,196,227,0.55); }
+  #badge-right .team-abbr { color: #e84057; text-shadow: 0 0 16px rgba(232,64,87,0.55);  }
 
   .team-seed {
     font-family: 'Barlow Condensed', sans-serif;
@@ -79,13 +134,21 @@
     letter-spacing: 1px;
     line-height: 1;
     white-space: nowrap;
-    opacity: 0.5;
+    opacity: 0.45;
   }
-
   #badge-left  .team-seed { color: #0bc4e3; }
   #badge-right .team-seed { color: #e84057; }
   .team-seed:empty { display: none; }
 
+  /* ── Vertical divider between name and dots ── */
+  .badge-divider {
+    width: 1px;
+    background: rgba(255,255,255,0.07);
+    margin: 10px 0;
+    flex-shrink: 0;
+  }
+
+  /* ── Score dots section ── */
   .badge-dots {
     display: flex;
     flex-direction: column;
@@ -93,29 +156,21 @@
     justify-content: center;
     gap: var(--dot-gap);
     padding: var(--pad-v) var(--dot-pad-h);
-    background: rgba(2, 7, 18, 1);
-    border: 1px solid rgba(200,170,110,0.28);
-    border-top: 1px solid rgba(200,170,110,0.55);
-    border-bottom-color: rgba(200,170,110,0.18);
-    position: relative;
     min-width: var(--dot-col-w);
+    position: relative;
   }
-
-  #badge-left  .badge-dots { border-right: none; border-radius: 0 0 var(--radius) 0; border-left: 1px solid rgba(200,170,110,0.35); }
-  #badge-right .badge-dots { border-left:  none; border-radius: 0 0 0 var(--radius); border-right: 1px solid rgba(200,170,110,0.35); }
 
   .dot {
     width:  var(--dot-size);
     height: var(--dot-size);
     border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
     transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
     flex-shrink: 0;
   }
-
-  #badge-left  .dot.filled { background: #0bc4e3; border-color: #0bc4e3; box-shadow: 0 0 5px #0bc4e3, 0 0 12px rgba(11,196,227,0.5); }
-  #badge-right .dot.filled { background: #e84057; border-color: #e84057; box-shadow: 0 0 5px #e84057, 0 0 12px rgba(232,64,87,0.5);  }
+  #badge-left  .dot.filled { background: #0bc4e3; border-color: #0bc4e3; box-shadow: 0 0 5px #0bc4e3, 0 0 10px rgba(11,196,227,0.5); }
+  #badge-right .dot.filled { background: #e84057; border-color: #e84057; box-shadow: 0 0 5px #e84057, 0 0 10px rgba(232,64,87,0.5);  }
 
   /* ─── WIN BANNER ─── */
   #win-banner {
@@ -872,20 +927,28 @@
 
   <!-- LEFT BADGE -->
   <div class="badge" id="badge-left">
-    <div class="badge-dots" id="left-dots"></div>
-    <div class="badge-main">
-      <div class="team-abbr" id="left-abbr"></div>
-      <div class="team-seed"  id="left-seed"></div>
+    <div class="badge-accent"></div>
+    <div class="badge-panel">
+      <div class="badge-main">
+        <div class="team-abbr" id="left-abbr"></div>
+        <div class="team-seed"  id="left-seed"></div>
+      </div>
+      <div class="badge-divider"></div>
+      <div class="badge-dots" id="left-dots"></div>
     </div>
   </div>
 
   <!-- RIGHT BADGE -->
   <div class="badge" id="badge-right">
-    <div class="badge-main">
-      <div class="team-abbr" id="right-abbr"></div>
-      <div class="team-seed"  id="right-seed"></div>
+    <div class="badge-panel">
+      <div class="badge-dots" id="right-dots"></div>
+      <div class="badge-divider"></div>
+      <div class="badge-main">
+        <div class="team-abbr" id="right-abbr"></div>
+        <div class="team-seed"  id="right-seed"></div>
+      </div>
     </div>
-    <div class="badge-dots" id="right-dots"></div>
+    <div class="badge-accent"></div>
   </div>
 
   <!-- WIN BANNER -->
@@ -1096,7 +1159,7 @@
   const DD     = 'https://ddragon.leagueoflegends.com';
 
   const r = document.documentElement.style;
-  r.setProperty('--badge-h',        `${44  * SCALE}px`);
+  r.setProperty('--badge-h',        `${50  * SCALE}px`);
   r.setProperty('--font-size',      `${16  * SCALE}px`);
   r.setProperty('--letter-spacing', `${2.5 * SCALE}px`);
   r.setProperty('--seed-size',      `${11  * SCALE}px`);
@@ -1109,6 +1172,8 @@
   r.setProperty('--pad-h',          `${14  * SCALE}px`);
   r.setProperty('--main-min-w',     `${80  * SCALE}px`);
   r.setProperty('--radius',         `${5   * SCALE}px`);
+  r.setProperty('--skew',           `${50  * SCALE}px`);
+  r.setProperty('--accent-w',       `${4   * SCALE}px`);
   r.setProperty('--badge-left',     `${BADGE_LEFT}px`);
   r.setProperty('--badge-right',    `${BADGE_RIGHT}px`);
   // Stats + Matchup panels share the same size vars
@@ -1552,7 +1617,7 @@
     }
   }
 
-  function buildStripSide(side, players, offset, syncDelay) {
+  function buildStripSide(side, players, offset) {
     const strip = document.getElementById(`strip-${side}`);
     strip.innerHTML = '';
     const S    = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--strip-sz')) || 42;
@@ -1573,14 +1638,12 @@
       const path = document.createElementNS(ns, 'path');
       path.setAttribute('class', 'cs-border-path');
       path.setAttribute('d', buildBorderPath(S, arcR, side));
-      path.style.animationDelay = syncDelay;
       svg.appendChild(path);
       slot.appendChild(svg);
 
       // Elder line
       const line = document.createElement('div');
       line.className = 'cs-elder-line';
-      line.style.animationDelay = syncDelay;
       slot.appendChild(line);
 
       strip.appendChild(slot);
@@ -1593,6 +1656,8 @@
     strip.classList.toggle('visible', shouldShow);
     if (!shouldShow) return;
 
+    // Negative delay locks each element into the current phase of a shared 1800ms clock
+    const syncDelay = `-${Date.now() % 1800}ms`;
     for (let i = 0; i < 5; i++) {
       const slot = document.getElementById(`cs-${side}-${i}`);
       if (!slot) continue;
@@ -1601,6 +1666,8 @@
       slot.classList.toggle('cs-baron', baronOn && !dead);
       slot.classList.toggle('cs-elder', elderOn && !dead);
       slot.classList.toggle('cs-dead', dead);
+      slot.querySelector('.cs-border-path')?.style.setProperty('animation-delay', syncDelay);
+      slot.querySelector('.cs-elder-line')?.style.setProperty('animation-delay', syncDelay);
     }
   }
 
@@ -1610,10 +1677,8 @@
     // Build strips if champion roster changed
     const blueKey = s.players.slice(0, 5).map(p => p.championName).join(',');
     const redKey  = s.players.slice(5, 10).map(p => p.championName).join(',');
-    // Calculate once so both strips share the exact same phase of the 1800ms clock
-    const syncDelay = `-${Date.now() % 1800}ms`;
-    if (blueKey !== lastStripKeyBlue) { lastStripKeyBlue = blueKey; buildStripSide('blue', s.players, 0, syncDelay); }
-    if (redKey  !== lastStripKeyRed)  { lastStripKeyRed  = redKey;  buildStripSide('red',  s.players, 5, syncDelay); }
+    if (blueKey !== lastStripKeyBlue) { lastStripKeyBlue = blueKey; buildStripSide('blue', s.players, 0); }
+    if (redKey  !== lastStripKeyRed)  { lastStripKeyRed  = redKey;  buildStripSide('red',  s.players, 5); }
 
     // Determine which team has which buff
     const bb = s.baronBuff;
@@ -1675,20 +1740,21 @@
       // Champion buff strips
       updateChampStrips(s);
 
-      // Poll fast when a panel is active or a buff is active
+      // Poll at 1s when a buff is active (strip updates), 10s when only stats panel is open, 2s otherwise
       const buffActive = !!(s.baronBuff || s.elderBuff);
-      startPolling(am !== null || ast !== null || buffActive);
+      const interval = buffActive ? 1000 : (ast !== null ? 10000 : 2000);
+      startPolling(interval);
     } catch(e) {}
   }
 
   initRuneData();
 
   let pollInterval = null;
-  function startPolling(fast) {
+  function startPolling(ms) {
     if (pollInterval) clearInterval(pollInterval);
-    pollInterval = setInterval(poll, fast ? 1000 : 2000);
+    pollInterval = setInterval(poll, ms);
   }
-  startPolling(false);
+  startPolling(2000);
   poll();
 </script>
 </body>

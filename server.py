@@ -23,6 +23,36 @@ RIOT_API_KEY = 'RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'   # <-- paste your n
 state = {}
 
 POSITION_ORDER = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'UTILITY']
+
+# ── DDragon item gold cache ───────────────────────────────────────────
+# Maps item ID (int) -> gold.total (int)
+_item_gold_cache = {}
+_item_gold_lock  = threading.Lock()
+
+def _load_item_gold():
+    """Fetch DDragon item data and populate _item_gold_cache. Called once at startup."""
+    try:
+        versions = json.loads(urllib.request.urlopen(
+            'https://ddragon.leagueoflegends.com/api/versions.json', timeout=5
+        ).read())
+        ver = versions[0]
+        data = json.loads(urllib.request.urlopen(
+            f'https://ddragon.leagueoflegends.com/cdn/{ver}/data/en_US/item.json', timeout=5
+        ).read())
+        with _item_gold_lock:
+            for iid, item in data.get('data', {}).items():
+                _item_gold_cache[int(iid)] = item.get('gold', {}).get('total', 0)
+    except Exception as e:
+        print(f'⚠️  Could not load DDragon item data: {e}')
+
+# Load in background so server starts immediately
+threading.Thread(target=_load_item_gold, daemon=True).start()
+
+def item_gold_total(item_id):
+    """Return the full gold cost of an item from DDragon, falling back to 0."""
+    with _item_gold_lock:
+        return _item_gold_cache.get(int(item_id), 0)
+
 POSITION_LABEL = {'TOP': 'Top', 'JUNGLE': 'Jungle', 'MIDDLE': 'Mid', 'BOTTOM': 'Bot', 'UTILITY': 'Support'}
 
 # ── HTTP helpers ─────────────────────────────────────────────────────
@@ -112,8 +142,8 @@ def fetch_stats():
         tk = team_kills.get(team, 0)
         kp = round((k + a) / tk * 100) if tk > 0 else 0
 
-        # Gold = sum of item prices (excludes trinket slot 6/7 ideally, but price=0 for trinkets anyway)
-        gold = sum(i.get('price', 0) for i in items)
+        # Gold = sum of DDragon gold.total per item (Live Client 'price' is only the recipe delta, not full cost)
+        gold = sum(item_gold_total(i.get('itemID', 0)) for i in items)
 
         result.append({
             'summonerName':     p.get('summonerName', ''),
@@ -247,10 +277,65 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+# ── Live stats auto-refresh ───────────────────────────────────────────
+
+def _stats_refresh_loop():
+    """While a stats panel is active, re-fetch live data every 10 seconds."""
+    import time
+    while True:
+        time.sleep(10)
+        if state.get('activeStats') is not None:
+            data = fetch_full()
+            if data.get('ok') and data.get('players'):
+                state['players']  = data['players']
+                state['gameTime'] = data.get('gameTime', 0)
+                state['ts']       = int(time.time() * 1000)
+
+# ── Global hotkeys ────────────────────────────────────────────────────
+
+ROLE_NAMES = ['Top', 'Jungle', 'Mid', 'Bot', 'Support']
+
+def _hotkey_activate_role(role_idx):
+    """Toggle stats panel for a role globally, fetching fresh data if activating."""
+    global state
+    if not state:
+        return
+    current = state.get('activeStats')
+    if current == role_idx:
+        # Same role pressed again — hide
+        state['activeMatchup'] = None
+        state['activeStats']   = None
+        state['ts']            = int(__import__('time').time() * 1000)
+    else:
+        # Activate — fetch fresh data first, then set role
+        data = fetch_full()
+        if data.get('ok') and data.get('players'):
+            state['players']  = data['players']
+            state['gameTime'] = data.get('gameTime', 0)
+        state['activeMatchup'] = role_idx
+        state['activeStats']   = role_idx
+        state['ts']            = int(__import__('time').time() * 1000)
+
+def _register_hotkeys():
+    try:
+        import keyboard
+        for i in range(5):
+            idx = i  # capture by value
+            keyboard.add_hotkey(f'ctrl+alt+{i+1}', lambda n=idx: _hotkey_activate_role(n))
+        print(f"    Global hotkeys: Ctrl+Alt+1–5 (Top/Jungle/Mid/Bot/Support stats)")
+        keyboard.wait()  # blocks this thread, keeping hooks alive
+    except ImportError:
+        print(f"    ⚠️  Global hotkeys unavailable — run:  pip install keyboard")
+    except Exception as e:
+        print(f"    ⚠️  Global hotkeys failed: {e}")
+
 if __name__ == '__main__':
     PORT = 8765
     print(f"✅  Relay server running at http://localhost:{PORT}")
     print(f"    Overlay URL: http://localhost:{PORT}/overlay")
     print(f"    Keep this window open while streaming.")
-    print(f"    Press Ctrl+C to stop.\n")
+    print(f"    Press Ctrl+C to stop.")
+    threading.Thread(target=_register_hotkeys, daemon=True).start()
+    threading.Thread(target=_stats_refresh_loop, daemon=True).start()
+    print()
     HTTPServer(('localhost', PORT), Handler).serve_forever()

@@ -273,6 +273,79 @@
   .obj-btn.elder-btn.obj-active { border-color:rgba(255,160,50,0.6); background:rgba(255,160,50,0.1); box-shadow:0 0 16px rgba(255,160,50,0.15); }
   .obj-btn.elder-btn.obj-active .obj-type { color:rgba(255,160,50,0.9); }
   .obj-btn.elder-btn .obj-badge { background:rgba(255,160,50,0.2); color:rgba(255,160,50,0.9); }
+
+  /* ══════════════════════════════════
+     ROLE KEYBIND STRIP
+     ══════════════════════════════════ */
+  #role-keybind-strip {
+    width: 52px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .rkb-header {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #333;
+    text-align: center;
+    padding: 0 0 10px;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .rkb-header span {
+    display: block;
+    color: rgba(200,170,110,0.3);
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+  }
+  .rkb-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 4px;
+  }
+  .rkb-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 0;
+    border-radius: 4px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .rkb-item:hover {
+    border-color: rgba(200,170,110,0.3);
+    background: rgba(200,170,110,0.05);
+  }
+  .rkb-item.active {
+    border-color: rgba(200,170,110,0.5);
+    background: rgba(200,170,110,0.1);
+  }
+  .rkb-num {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 900;
+    color: rgba(200,170,110,0.5);
+    line-height: 1;
+  }
+  .rkb-item.active .rkb-num { color: var(--gold); }
+  .rkb-role {
+    font-size: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #333;
+    line-height: 1;
+  }
+  .rkb-item.active .rkb-role { color: rgba(200,170,110,0.5); }
 </style>
 </head>
 <body>
@@ -314,6 +387,17 @@
 </div>
 
 <div id="live-section">
+
+  <div id="role-keybind-strip">
+    <div class="rkb-header">Ctrl+Alt+<span>Stats</span></div>
+    <div class="rkb-list">
+      <div class="rkb-item" id="rkb-0" onclick="activateRole(0)"><div class="rkb-num">1</div><div class="rkb-role">Top</div></div>
+      <div class="rkb-item" id="rkb-1" onclick="activateRole(1)"><div class="rkb-num">2</div><div class="rkb-role">Jgl</div></div>
+      <div class="rkb-item" id="rkb-2" onclick="activateRole(2)"><div class="rkb-num">3</div><div class="rkb-role">Mid</div></div>
+      <div class="rkb-item" id="rkb-3" onclick="activateRole(3)"><div class="rkb-num">4</div><div class="rkb-role">Bot</div></div>
+      <div class="rkb-item" id="rkb-4" onclick="activateRole(4)"><div class="rkb-num">5</div><div class="rkb-role">Sup</div></div>
+    </div>
+  </div>
 
   <div id="game-sidebar">
     <div class="section-title">Matchup</div>
@@ -409,6 +493,11 @@
         <div class="sc-item"><kbd>Ctrl+Shift+Z</kbd> Undo</div>
         <div class="sc-item"><kbd>Ctrl+Shift+R</kbd> Reset scores</div>
         <div class="sc-item"><kbd>Ctrl+Shift+T</kbd> New series</div>
+        <div class="sc-item"><kbd>Ctrl+Alt+1</kbd> Top stats</div>
+        <div class="sc-item"><kbd>Ctrl+Alt+2</kbd> Jungle stats</div>
+        <div class="sc-item"><kbd>Ctrl+Alt+3</kbd> Mid stats</div>
+        <div class="sc-item"><kbd>Ctrl+Alt+4</kbd> Bot stats</div>
+        <div class="sc-item"><kbd>Ctrl+Alt+5</kbd> Support stats</div>
       </div>
     </div>
   </div>
@@ -556,7 +645,10 @@
 
   function syncHighlights() {
     const active = state?.activeMatchup ?? null;
-    for (let i=0; i<5;  i++) document.getElementById(`rb-${i}`)?.classList.toggle('active', active===i);
+    for (let i=0; i<5;  i++) {
+      document.getElementById(`rb-${i}`)?.classList.toggle('active', active===i);
+      document.getElementById(`rkb-${i}`)?.classList.toggle('active', active===i);
+    }
     for (let i=0; i<10; i++) {
       const s = document.getElementById(`slot-${i}`);
       if (s) { s.classList.remove('active'); if (active!==null && (i===active||i===active+5)) s.classList.add('active'); }
@@ -821,15 +913,25 @@
   setInterval(tickObjStatus, 500);
 
   document.addEventListener('keydown', e => {
-    if(!e.ctrlKey||!e.shiftKey) return;
     if(!document.getElementById('live-section').classList.contains('active')) return;
-    switch(e.key){
-      case 'ArrowLeft':  e.preventDefault(); givePoint('left');  break;
-      case 'ArrowRight': e.preventDefault(); givePoint('right'); break;
-      case 'S': e.preventDefault(); swapSides();   break;
-      case 'Z': e.preventDefault(); undoLast();    break;
-      case 'R': e.preventDefault(); resetScores(); break;
-      case 'T': e.preventDefault(); newTeams();    break;
+    if(e.ctrlKey && e.shiftKey) {
+      switch(e.key){
+        case 'ArrowLeft':  e.preventDefault(); givePoint('left');  break;
+        case 'ArrowRight': e.preventDefault(); givePoint('right'); break;
+        case 'S': e.preventDefault(); swapSides();   break;
+        case 'Z': e.preventDefault(); undoLast();    break;
+        case 'R': e.preventDefault(); resetScores(); break;
+        case 'T': e.preventDefault(); newTeams();    break;
+      }
+    }
+    if(e.ctrlKey && e.altKey) {
+      switch(e.code){
+        case 'Digit1': e.preventDefault(); activateRole(0); break;
+        case 'Digit2': e.preventDefault(); activateRole(1); break;
+        case 'Digit3': e.preventDefault(); activateRole(2); break;
+        case 'Digit4': e.preventDefault(); activateRole(3); break;
+        case 'Digit5': e.preventDefault(); activateRole(4); break;
+      }
     }
   });
 
