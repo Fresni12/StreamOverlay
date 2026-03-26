@@ -147,7 +147,9 @@
   @keyframes fadeIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:none} }
 
   .shortcuts { background:rgba(0,0,0,0.2); border:1px solid #111; border-radius:4px; padding:12px 14px; }
-  .sc-title { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:#333; margin-bottom:9px; }
+  .sc-title { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:#333; margin-bottom:9px; display:flex; align-items:center; gap:8px; }
+  .sc-reload { font-size:10px; color:#333; cursor:pointer; transition:color 0.15s; border:none; background:none; padding:0; }
+  .sc-reload:hover { color:var(--gold); }
   .sc-grid  { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
   .sc-item  { display:flex; align-items:center; gap:5px; font-size:10px; color:#555; }
   kbd { background:#0d1117; border:1px solid #2a2a3a; border-radius:3px; padding:1px 5px; font-family:monospace; font-size:9px; color:var(--gold); white-space:nowrap; }
@@ -389,13 +391,13 @@
 <div id="live-section">
 
   <div id="role-keybind-strip">
-    <div class="rkb-header">Ctrl+Alt+<span>Stats</span></div>
+    <div class="rkb-header" id="rkb-header">Stats</div>
     <div class="rkb-list">
-      <div class="rkb-item" id="rkb-0" onclick="activateRole(0)"><div class="rkb-num">1</div><div class="rkb-role">Top</div></div>
-      <div class="rkb-item" id="rkb-1" onclick="activateRole(1)"><div class="rkb-num">2</div><div class="rkb-role">Jgl</div></div>
-      <div class="rkb-item" id="rkb-2" onclick="activateRole(2)"><div class="rkb-num">3</div><div class="rkb-role">Mid</div></div>
-      <div class="rkb-item" id="rkb-3" onclick="activateRole(3)"><div class="rkb-num">4</div><div class="rkb-role">Bot</div></div>
-      <div class="rkb-item" id="rkb-4" onclick="activateRole(4)"><div class="rkb-num">5</div><div class="rkb-role">Sup</div></div>
+      <div class="rkb-item" id="rkb-0" onclick="activateRole(0)"><div class="rkb-num" id="rkb-num-0">1</div><div class="rkb-role">Top</div></div>
+      <div class="rkb-item" id="rkb-1" onclick="activateRole(1)"><div class="rkb-num" id="rkb-num-1">2</div><div class="rkb-role">Jgl</div></div>
+      <div class="rkb-item" id="rkb-2" onclick="activateRole(2)"><div class="rkb-num" id="rkb-num-2">3</div><div class="rkb-role">Mid</div></div>
+      <div class="rkb-item" id="rkb-3" onclick="activateRole(3)"><div class="rkb-num" id="rkb-num-3">4</div><div class="rkb-role">Bot</div></div>
+      <div class="rkb-item" id="rkb-4" onclick="activateRole(4)"><div class="rkb-num" id="rkb-num-4">5</div><div class="rkb-role">Sup</div></div>
     </div>
   </div>
 
@@ -485,19 +487,12 @@
     <div class="log-box" id="log-box"></div>
 
     <div class="shortcuts">
-      <div class="sc-title">Keyboard Shortcuts</div>
-      <div class="sc-grid">
-        <div class="sc-item"><kbd>Ctrl+Shift+←</kbd> Left wins</div>
-        <div class="sc-item"><kbd>Ctrl+Shift+S</kbd> Swap sides</div>
-        <div class="sc-item"><kbd>Ctrl+Shift+→</kbd> Right wins</div>
-        <div class="sc-item"><kbd>Ctrl+Shift+Z</kbd> Undo</div>
-        <div class="sc-item"><kbd>Ctrl+Shift+R</kbd> Reset scores</div>
-        <div class="sc-item"><kbd>Ctrl+Shift+T</kbd> New series</div>
-        <div class="sc-item"><kbd>Ctrl+Alt+1</kbd> Top stats</div>
-        <div class="sc-item"><kbd>Ctrl+Alt+2</kbd> Jungle stats</div>
-        <div class="sc-item"><kbd>Ctrl+Alt+3</kbd> Mid stats</div>
-        <div class="sc-item"><kbd>Ctrl+Alt+4</kbd> Bot stats</div>
-        <div class="sc-item"><kbd>Ctrl+Alt+5</kbd> Support stats</div>
+      <div class="sc-title">
+        Keyboard Shortcuts
+        <button class="sc-reload" onclick="loadKeybinds()" title="Reload keybinds.json">↻ reload</button>
+      </div>
+      <div class="sc-grid" id="sc-grid">
+        <!-- populated dynamically from keybinds.json -->
       </div>
     </div>
   </div>
@@ -509,9 +504,7 @@
   let selectedWins = 2, state = null, history = [];
 
   let ddVersion = '15.5.1';
-  // Rune icon map: id -> CDN icon path
   let runeMap = {};
-  // Fetch latest version first, then load runesReforged with the correct version
   fetch('https://ddragon.leagueoflegends.com/api/versions.json')
     .then(r=>r.json())
     .then(v=>{
@@ -547,6 +540,174 @@
     'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/icon-position-utility.png',
   ];
 
+  // ══════════════════════════════════════════════
+  //  KEYBIND SYSTEM
+  // ══════════════════════════════════════════════
+
+  const DEFAULT_KEYBINDS = {
+    leftWins:    'ctrl+shift+left',
+    rightWins:   'ctrl+shift+right',
+    swapSides:   'ctrl+shift+s',
+    undo:        'ctrl+shift+z',
+    resetScores: 'ctrl+shift+r',
+    newSeries:   'ctrl+shift+t',
+    roleTop:     'ctrl+alt+1',
+    roleJungle:  'ctrl+alt+2',
+    roleMid:     'ctrl+alt+3',
+    roleBot:     'ctrl+alt+4',
+    roleSupport: 'ctrl+alt+5',
+  };
+
+  let keybinds = { ...DEFAULT_KEYBINDS };
+
+  // Maps shorthand key names used in keybinds.json to JS event properties
+  const JS_KEY_MAP = {
+    'left':      { key: 'ArrowLeft'  },
+    'right':     { key: 'ArrowRight' },
+    'up':        { key: 'ArrowUp'    },
+    'down':      { key: 'ArrowDown'  },
+    'enter':     { key: 'Enter'      },
+    'escape':    { key: 'Escape'     },
+    'space':     { key: ' '          },
+    'backspace': { key: 'Backspace'  },
+    'delete':    { key: 'Delete'     },
+    'tab':       { key: 'Tab'        },
+  };
+  // Digit keys matched by code (avoids alt-key symbol ambiguity on non-US keyboards)
+  for (let d = 0; d <= 9; d++) JS_KEY_MAP[String(d)] = { code: `Digit${d}` };
+  // Function keys
+  for (let f = 1; f <= 12; f++) JS_KEY_MAP[`f${f}`] = { key: `F${f}` };
+
+  // Maps shorthand key names to human-readable display labels
+  const DISPLAY_KEY_MAP = {
+    'left': '←', 'right': '→', 'up': '↑', 'down': '↓',
+    'enter': '↵', 'escape': 'Esc', 'space': 'Space',
+    'backspace': '⌫', 'delete': 'Del', 'tab': '↹',
+  };
+
+  function parseKeybind(str) {
+    if (!str) return null;
+    const parts = str.toLowerCase().split('+');
+    return {
+      ctrl:  parts.includes('ctrl'),
+      shift: parts.includes('shift'),
+      alt:   parts.includes('alt'),
+      meta:  parts.includes('meta'),
+      key:   parts[parts.length - 1],
+    };
+  }
+
+  function matchesKeybind(e, parsed) {
+    if (!parsed) return false;
+    if (!!e.ctrlKey  !== parsed.ctrl)  return false;
+    if (!!e.shiftKey !== parsed.shift) return false;
+    if (!!e.altKey   !== parsed.alt)   return false;
+    if (!!e.metaKey  !== parsed.meta)  return false;
+    const mapped = JS_KEY_MAP[parsed.key];
+    if (mapped) {
+      if (mapped.key  !== undefined && e.key  !== mapped.key)  return false;
+      if (mapped.code !== undefined && e.code !== mapped.code) return false;
+    } else {
+      if (e.key.toLowerCase() !== parsed.key) return false;
+    }
+    return true;
+  }
+
+  function formatKeybind(str) {
+    if (!str) return '—';
+    return str.split('+').map(p => {
+      const lo = p.toLowerCase();
+      if (lo === 'ctrl')  return 'Ctrl';
+      if (lo === 'shift') return 'Shift';
+      if (lo === 'alt')   return 'Alt';
+      if (lo === 'meta')  return '⌘';
+      return DISPLAY_KEY_MAP[lo] || p.toUpperCase();
+    }).join('+');
+  }
+
+  function renderShortcuts() {
+    const kb = keybinds;
+    const grid = document.getElementById('sc-grid');
+    if (!grid) return;
+
+    const items = [
+      [kb.leftWins,    'Left wins'],
+      [kb.swapSides,   'Swap sides'],
+      [kb.rightWins,   'Right wins'],
+      [kb.undo,        'Undo'],
+      [kb.resetScores, 'Reset scores'],
+      [kb.newSeries,   'New series'],
+      [kb.roleTop,     'Top stats'],
+      [kb.roleJungle,  'Jungle stats'],
+      [kb.roleMid,     'Mid stats'],
+      [kb.roleBot,     'Bot stats'],
+      [kb.roleSupport, 'Support stats'],
+    ];
+    grid.innerHTML = items.map(([k, label]) =>
+      `<div class="sc-item"><kbd>${formatKeybind(k)}</kbd> ${label}</div>`
+    ).join('');
+
+    // Update the role keybind strip numbers and header to reflect loaded binds
+    const roleKeys = [kb.roleTop, kb.roleJungle, kb.roleMid, kb.roleBot, kb.roleSupport];
+    roleKeys.forEach((k, i) => {
+      const parts = (k || '').toLowerCase().split('+');
+      const lastKey = parts[parts.length - 1];
+      const numEl = document.getElementById(`rkb-num-${i}`);
+      if (numEl) numEl.textContent = DISPLAY_KEY_MAP[lastKey] || lastKey.toUpperCase();
+    });
+
+    // Update the strip header to show the common prefix (e.g. "Ctrl+Alt+")
+    if (roleKeys.length) {
+      const parts0 = (roleKeys[0] || '').split('+');
+      const prefix = parts0.slice(0, -1).map(p => formatKeybind(p)).join('+');
+      const hdr = document.getElementById('rkb-header');
+      if (hdr) hdr.innerHTML = prefix
+        ? `<span>${prefix}+</span>Stats`
+        : 'Stats';
+    }
+  }
+
+  async function loadKeybinds() {
+    try {
+      const res = await fetch(`${SERVER}/keybinds?t=${Date.now()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const loaded = await res.json();
+      // Merge loaded values over defaults, ignoring underscore comment keys
+      const merged = { ...DEFAULT_KEYBINDS };
+      for (const [k, v] of Object.entries(loaded)) {
+        if (!k.startsWith('_') && typeof v === 'string') merged[k] = v;
+      }
+      keybinds = merged;
+    } catch (e) {
+      // Server offline or file missing — keep current keybinds (defaults on first load)
+      console.warn('Could not load keybinds from server, using defaults:', e.message);
+    }
+    renderShortcuts();
+  }
+
+  // ══════════════════════════════════════════════
+  //  KEYBOARD HANDLER — built dynamically from keybinds
+  // ══════════════════════════════════════════════
+
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('live-section').classList.contains('active')) return;
+    const kb = keybinds;
+    if (matchesKeybind(e, parseKeybind(kb.leftWins)))    { e.preventDefault(); givePoint('left');  return; }
+    if (matchesKeybind(e, parseKeybind(kb.rightWins)))   { e.preventDefault(); givePoint('right'); return; }
+    if (matchesKeybind(e, parseKeybind(kb.swapSides)))   { e.preventDefault(); swapSides();        return; }
+    if (matchesKeybind(e, parseKeybind(kb.undo)))        { e.preventDefault(); undoLast();         return; }
+    if (matchesKeybind(e, parseKeybind(kb.resetScores))) { e.preventDefault(); resetScores();      return; }
+    if (matchesKeybind(e, parseKeybind(kb.newSeries)))   { e.preventDefault(); newTeams();         return; }
+    const roleBinds = [kb.roleTop, kb.roleJungle, kb.roleMid, kb.roleBot, kb.roleSupport];
+    roleBinds.forEach((k, i) => {
+      if (matchesKeybind(e, parseKeybind(k))) { e.preventDefault(); activateRole(i); }
+    });
+  });
+
+  // ══════════════════════════════════════════════
+  //  ROLE / PLAYER GRID
+  // ══════════════════════════════════════════════
+
   function buildRoleBtns() {
     const col = document.getElementById('role-btns');
     col.innerHTML = '';
@@ -577,7 +738,6 @@
     slot.className = 'player-slot' + (p ? '' : ' empty-slot');
     slot.id = `slot-${globalIdx}`;
 
-    // top row
     const top = document.createElement('div');
     top.className = 'slot-top';
 
@@ -597,7 +757,6 @@
     top.appendChild(portWrap); top.appendChild(info);
     slot.appendChild(top);
 
-    // rune row
     const runeRow = document.createElement('div');
     runeRow.className = 'slot-runes';
     runeRow.id = `runes-${globalIdx}`;
@@ -655,7 +814,6 @@
     }
   }
 
-  // Single combined fetch
   async function fetchGame() {
     const btn = document.getElementById('btn-fetch');
     const st  = document.getElementById('game-status');
@@ -703,7 +861,6 @@
     log('👁 Overlay hidden');
   }
 
-  // Server ping
   async function checkServer() {
     try { await fetch(`${SERVER}/state`); setServerStatus(true); } catch(e) { setServerStatus(false); }
   }
@@ -835,15 +992,13 @@
 
   function toggleBuff(type, team) {
     if (!state) return;
-    const key = type + 'Buff';  // baronBuff or elderBuff
+    const key = type + 'Buff';
     const current = state[key];
 
-    // If same team buff is active, cancel it
     if (current && current.team === team) {
       state[key] = null;
       log(`✕ ${type.charAt(0).toUpperCase()+type.slice(1)} buff cancelled`);
     } else {
-      // Activate (or switch team)
       const teamAbbr = team === 'blue'
         ? state[state.leftTeam].abbr
         : state[state.leftTeam === 'team1' ? 'team2' : 'team1'].abbr;
@@ -878,7 +1033,6 @@
     ['baron', 'elder'].forEach(type => {
       const buff = state[type + 'Buff'];
       if (!buff) {
-        // Clear badges
         ['blue', 'red'].forEach(team => {
           const badge = document.getElementById(`obj-${type}-${team}-badge`);
           if (badge) badge.style.display = 'none';
@@ -898,12 +1052,10 @@
       const sec = String(Math.floor(remaining % 60)).padStart(2, '0');
       const badge = document.getElementById(`obj-${type}-${buff.team}-badge`);
       if (badge) { badge.textContent = `${m}:${sec}`; badge.style.display = 'block'; }
-      // Hide the other team's badge
       const otherTeam = buff.team === 'blue' ? 'red' : 'blue';
       const otherBadge = document.getElementById(`obj-${type}-${otherTeam}-badge`);
       if (otherBadge) otherBadge.style.display = 'none';
     });
-    // Auto-fetch every 4 seconds while any buff is active
     if (anyActive && Date.now() - lastAutoFetch > 4000) {
       lastAutoFetch = Date.now();
       fetchGame();
@@ -912,28 +1064,11 @@
 
   setInterval(tickObjStatus, 500);
 
-  document.addEventListener('keydown', e => {
-    if(!document.getElementById('live-section').classList.contains('active')) return;
-    if(e.ctrlKey && e.shiftKey) {
-      switch(e.key){
-        case 'ArrowLeft':  e.preventDefault(); givePoint('left');  break;
-        case 'ArrowRight': e.preventDefault(); givePoint('right'); break;
-        case 'S': e.preventDefault(); swapSides();   break;
-        case 'Z': e.preventDefault(); undoLast();    break;
-        case 'R': e.preventDefault(); resetScores(); break;
-        case 'T': e.preventDefault(); newTeams();    break;
-      }
-    }
-    if(e.ctrlKey && e.altKey) {
-      switch(e.code){
-        case 'Digit1': e.preventDefault(); activateRole(0); break;
-        case 'Digit2': e.preventDefault(); activateRole(1); break;
-        case 'Digit3': e.preventDefault(); activateRole(2); break;
-        case 'Digit4': e.preventDefault(); activateRole(3); break;
-        case 'Digit5': e.preventDefault(); activateRole(4); break;
-      }
-    }
-  });
+  // ══════════════════════════════════════════════
+  //  INIT
+  // ══════════════════════════════════════════════
+
+  loadKeybinds();
 
   ['t1','t2'].forEach(id=>{
     const el=document.getElementById(id);
