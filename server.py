@@ -24,6 +24,39 @@ state = {}
 
 POSITION_ORDER = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'UTILITY']
 
+# ── Keybinds defaults (used when keybinds.json is missing or unreadable) ─────
+DEFAULT_KEYBINDS = {
+    'leftWins':    'ctrl+shift+left',
+    'rightWins':   'ctrl+shift+right',
+    'swapSides':   'ctrl+shift+s',
+    'undo':        'ctrl+shift+z',
+    'resetScores': 'ctrl+shift+r',
+    'newSeries':   'ctrl+shift+t',
+    'roleTop':     'ctrl+alt+1',
+    'roleJungle':  'ctrl+alt+2',
+    'roleMid':     'ctrl+alt+3',
+    'roleBot':     'ctrl+alt+4',
+    'roleSupport': 'ctrl+alt+5',
+}
+
+_KEYBINDS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keybinds.json')
+
+def load_keybinds():
+    """Load keybinds.json, falling back to defaults for any missing keys."""
+    kb = dict(DEFAULT_KEYBINDS)
+    try:
+        with open(_KEYBINDS_PATH, 'r') as f:
+            loaded = json.load(f)
+        # Only accept non-underscore keys (skip _help etc.)
+        for k, v in loaded.items():
+            if not k.startswith('_') and isinstance(v, str):
+                kb[k] = v
+    except FileNotFoundError:
+        print(f'    ⚠️  keybinds.json not found — using defaults')
+    except Exception as e:
+        print(f'    ⚠️  Could not read keybinds.json ({e}) — using defaults')
+    return kb
+
 # ── DDragon item gold cache ───────────────────────────────────────────
 # Maps item ID (int) -> gold.total (int)
 _item_gold_cache = {}
@@ -142,7 +175,7 @@ def fetch_stats():
         tk = team_kills.get(team, 0)
         kp = round((k + a) / tk * 100) if tk > 0 else 0
 
-        # Gold = sum of DDragon gold.total per item (Live Client 'price' is only the recipe delta, not full cost)
+        # Gold = sum of DDragon gold.total per item
         gold = sum(item_gold_total(i.get('itemID', 0)) for i in items)
 
         result.append({
@@ -168,13 +201,10 @@ def fetch_stats():
     return {'ok': True, 'players': result, 'gameTime': round(game_time)}
 
 
-# ── HTTP handler ──────────────────────────────────────────────────────
-
 # ── Combined fetch: runes + live stats ───────────────────────────────────
 
 def fetch_full():
     """Single call returning rune + live-stats data merged per player."""
-    # Run both fetches in parallel
     champ_result = [None]
     stats_result = [None]
 
@@ -189,13 +219,11 @@ def fetch_full():
     champs = champ_result[0]
     stats  = stats_result[0]
 
-    # If live client is not up, fall back to rune-only data
     if not champs.get('ok'):
-        return champs  # propagate the error
+        return champs
 
-    players = champs['players']  # has runes, summonerName, championName
+    players = champs['players']
 
-    # Merge live stats if available
     if stats.get('ok') and stats.get('players'):
         stats_by_name = {p['summonerName']: p for p in stats['players']}
         for p in players:
@@ -214,6 +242,8 @@ def fetch_full():
     else:
         return {'ok': True, 'players': players, 'gameTime': 0}
 
+
+# ── HTTP handler ──────────────────────────────────────────────────────
 
 class Handler(BaseHTTPRequestHandler):
 
@@ -237,6 +267,21 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Pragma', 'no-cache')
                 self.end_headers()
                 self.wfile.write(data)
+            elif path == '/keybinds':
+                # Serve keybinds.json directly so the controller can load it
+                try:
+                    with open(_KEYBINDS_PATH, 'rb') as f:
+                        data = f.read()
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+                    self.send_header('Pragma', 'no-cache')
+                    self.end_headers()
+                    self.wfile.write(data)
+                except FileNotFoundError:
+                    self.cors(404)
+                    self.wfile.write(json.dumps({'error': 'keybinds.json not found'}).encode())
             elif path.startswith('/champions'):
                 self.cors(200)
                 self.wfile.write(json.dumps(fetch_champions()).encode())
@@ -249,7 +294,7 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self.cors(404)
         except (ConnectionAbortedError, BrokenPipeError, ConnectionResetError):
-            pass  # client disconnected mid-response — normal with frequent polling
+            pass
 
     def do_POST(self):
         global state
@@ -302,12 +347,10 @@ def _hotkey_activate_role(role_idx):
         return
     current = state.get('activeStats')
     if current == role_idx:
-        # Same role pressed again — hide
         state['activeMatchup'] = None
         state['activeStats']   = None
         state['ts']            = int(__import__('time').time() * 1000)
     else:
-        # Activate — fetch fresh data first, then set role
         data = fetch_full()
         if data.get('ok') and data.get('players'):
             state['players']  = data['players']
@@ -319,22 +362,37 @@ def _hotkey_activate_role(role_idx):
 def _register_hotkeys():
     try:
         import keyboard
-        for i in range(5):
+
+        kb = load_keybinds()
+
+        role_keys = ['roleTop', 'roleJungle', 'roleMid', 'roleBot', 'roleSupport']
+        registered = []
+        for i, key_name in enumerate(role_keys):
+            hotkey = kb.get(key_name, f'ctrl+alt+{i+1}')
             idx = i  # capture by value
-            keyboard.add_hotkey(f'ctrl+alt+{i+1}', lambda n=idx: _hotkey_activate_role(n))
-        print(f"    Global hotkeys: Ctrl+Alt+1–5 (Top/Jungle/Mid/Bot/Support stats)")
+            try:
+                keyboard.add_hotkey(hotkey, lambda n=idx: _hotkey_activate_role(n))
+                registered.append(f'{hotkey} → {ROLE_NAMES[i]}')
+            except Exception as e:
+                print(f'    ⚠️  Could not register hotkey "{hotkey}": {e}')
+
+        if registered:
+            print(f'    Global hotkeys (from keybinds.json):')
+            for entry in registered:
+                print(f'      {entry}')
+
         keyboard.wait()  # blocks this thread, keeping hooks alive
     except ImportError:
-        print(f"    ⚠️  Global hotkeys unavailable — run:  pip install keyboard")
+        print(f'    ⚠️  Global hotkeys unavailable — run:  pip install keyboard')
     except Exception as e:
-        print(f"    ⚠️  Global hotkeys failed: {e}")
+        print(f'    ⚠️  Global hotkeys failed: {e}')
 
 if __name__ == '__main__':
     PORT = 8765
-    print(f"✅  Relay server running at http://localhost:{PORT}")
-    print(f"    Overlay URL: http://localhost:{PORT}/overlay")
-    print(f"    Keep this window open while streaming.")
-    print(f"    Press Ctrl+C to stop.")
+    print(f'✅  Relay server running at http://localhost:{PORT}')
+    print(f'    Overlay URL: http://localhost:{PORT}/overlay')
+    print(f'    Keep this window open while streaming.')
+    print(f'    Press Ctrl+C to stop.')
     threading.Thread(target=_register_hotkeys, daemon=True).start()
     threading.Thread(target=_stats_refresh_loop, daemon=True).start()
     print()
