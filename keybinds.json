@@ -1,0 +1,20 @@
+{
+  "_help": {
+    "format":    "Separate modifiers and keys with +, e.g. ctrl+shift+s or ctrl+alt+f1",
+    "modifiers": "ctrl  |  shift  |  alt  |  meta (Win/Cmd)",
+    "keys":      "Letters a-z, digits 0-9, arrows left/right/up/down, f1-f12, enter, escape, space, backspace, delete, tab"
+  },
+
+  "leftWins":    "ctrl+shift+left",
+  "rightWins":   "ctrl+shift+right",
+  "swapSides":   "ctrl+shift+s",
+  "undo":        "ctrl+shift+z",
+  "resetScores": "ctrl+shift+r",
+  "newSeries":   "ctrl+shift+t",
+
+  "roleTop":     "ctrl+alt+1",
+  "roleJungle":  "ctrl+alt+2",
+  "roleMid":     "ctrl+alt+3",
+  "roleBot":     "ctrl+alt+4",
+  "roleSupport": "ctrl+alt+5"
+}
